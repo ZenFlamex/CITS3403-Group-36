@@ -10,3 +10,56 @@ nav a {
     margin-right: 1rem;
 }
 
+
+.signup-container {
+    background-color: #FFFFFF; 
+    border: 1px solid #EEEEEE; 
+    border-radius: 8px;       
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); 
+    padding: 30px; 
+
+}
+
+.form-group label {
+    font-weight: bold; 
+    margin-bottom: 0.5rem; 
+}
+
+.input-note {
+    font-size: 0.875em; 
+    color: #6c757d; 
+    margin-bottom: 0.25rem;
+}
+
+
+
+.signup-btn {
+    background-color: #FB712A; 
+    border-color: #FB712A; 
+    color: white; 
+  }
+  
+  .signup-btn:hover {
+    background-color: #E1601F; 
+    border-color: #D1571A; 
+    color: white;
+  }
+
+.login-link {
+   text-align: center; 
+   margin-top: 1rem; 
+}
+
+.login-link a {
+   color: #0d6efd; 
+   text-decoration: none; 
+}
+
+.login-link a:hover {
+   text-decoration: underline; 
+}
+
+.logo img { 
+    height: 120px; 
+    width: auto; 
+}
