@@ -13,7 +13,10 @@ def signup():
 def login():
     return render_template('login.html') 
 
-
 @application.route('/forgot_password.html')
 def forgot_password():
     return render_template('forgot_password.html') 
+
+@application.route('/stats.html')
+def stats():
+    return render_template('stats.html')
