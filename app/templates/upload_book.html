@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Add Book{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Add a New Book</h2>
+    <form action="{{ url_for('upload_book') }}" method="POST">
+        <div class="form-group mb-3">
+            <label for="title">Title</label>
+            <input type="text" class="form-control" id="title" name="title" required>
+        </div>
+        
+        <div class="form-group mb-3">
+            <label for="author">Author</label>
+            <input type="text" class="form-control" id="author" name="author" required>
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="genre">Genre</label>
+            <input type="text" class="form-control" id="genre" name="genre">
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="image_url">Book Image URL</label>
+            <input type="url" class="form-control" id="image_url" name="image_url" placeholder="https://example.com/image.jpg">
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="date_started">Date Started Reading</label>
+            <input type="date" class="form-control" id="date_started" name="date_started">
+        </div>
+
+        <div class="form-check mb-3">
+            <input type="checkbox" class="form-check-input" id="private" name="private">
+            <label class="form-check-label" for="private">Keep this book private</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Upload Book</button>
+    </form>
+</div>
+{% endblock %}

@@ -17,3 +17,8 @@ def login():
 @application.route('/forgot_password.html')
 def forgot_password():
     return render_template('forgot_password.html') 
+
+
+@application.route('/upload_book.html')
+def upload_book():
+    return render_template('upload_book.html')
