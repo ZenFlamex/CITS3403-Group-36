@@ -1,6 +1,265 @@
 {% extends "base.html" %}
 
+{% block title %}Home{% endblock %}
+
 {% block content %}
-<h2>Welcome to your Book Reading Tracker</h2>
-<p>Track your reading, log sessions, and share progress!</p>
+{% if current_user and current_user.is_authenticated %}
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="welcome-message">
+                <h2>Welcome to BookGraph, {{ username }}!</h2>
+                <p class="lead">Track your reading journey, connect with fellow readers, and discover new favorites.</p>
+            </div>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('upload_book') }}" class="btn btn-outline-primary"><i class="bi bi-plus-circle me-2"></i>Add New Book</a>
+        </div>
+    </div>
+
+    <!-- Reading Stats Summary -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card border-0 bg-light">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h3 class="reading-stat">{{ reading_count }}</h3>
+                            <p class="text-muted">Currently Reading</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="reading-stat">{{ completed_count }}</h3>
+                            <p class="text-muted">Completed</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="reading-stat">{{ pages_read }}</h3>
+                            <p class="text-muted">Pages Read</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="reading-stat">{{ hours_read }}</h3>
+                            <p class="text-muted">Hours Read</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Favorite Books Section -->
+    <div class="book-section mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3><i class="bi bi-star-fill text-warning me-2"></i>Favorite Books</h3>
+            <a href="#" class="text-decoration-none">View All</a>
+        </div>
+        <div class="row">
+            {% if favorite_books %}
+                {% for book in favorite_books %}
+                    <div class="col-md-3 col-sm-6 mb-4">
+                        <div class="book-card card h-100">
+                            <div class="book-cover-container">
+                                <img src="{{ book.cover_image }}" alt="{{ book.title }}" class="card-img-top book-cover">
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">{{ book.title }}</h5>
+                                <p class="card-text text-muted">{{ book.author }}</p>
+                                <div class="book-rating">
+                                    {% for i in range(book.rating) %}
+                                        <i class="bi bi-star-fill text-warning"></i>
+                                    {% endfor %}
+                                    {% for i in range(5 - book.rating) %}
+                                        <i class="bi bi-star text-warning"></i>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12">
+                    <div class="placeholder-message card p-4 text-center">
+                        <i class="bi bi-star display-4 text-muted mb-3"></i>
+                        <h4>No favorite books yet</h4>
+                        <p class="text-muted">Mark books as favorites to see them here</p>
+                        <a href="#" class="btn btn-primary mt-2">Browse Books</a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- My Books Section -->
+    <div class="book-section mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3><i class="bi bi-book-half me-2"></i>My Books</h3>
+            <a href="{{ url_for('my_books') }}" class="text-decoration-none">View All</a>
+        </div>
+        <div class="row">
+            {% if current_books %}
+                {% for book in current_books %}
+                    <div class="col-md-3 col-sm-6 mb-4">
+                        <div class="book-card card h-100">
+                            <div class="book-cover-container">
+                                <img src="{{ book.cover_image }}" alt="{{ book.title }}" class="card-img-top book-cover">
+                                <div class="status-badge 
+                                    {% if book.status == 'Completed' %}badge-completed{% endif %}
+                                    {% if book.status == 'In Progress' %}badge-progress{% endif %}
+                                    {% if book.status == 'Dropped' %}badge-dropped{% endif %}
+                                ">
+                                    {{ book.status }}
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">{{ book.title }}</h5>
+                                <p class="card-text text-muted">{{ book.author }}</p>
+                            
+                                {% if book.status == 'In Progress' %}
+                                    <p class="book-progress">{{ book.current_page }}/{{ book.total_pages }} pages</p>
+                                {% endif %}
+                            
+                                {% if book.status == 'Completed' %}
+                                    <div class="book-rating">
+                                        {% for i in range(book.rating) %}
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                        {% endfor %}
+                                        {% for i in range(5 - book.rating) %}
+                                            <i class="bi bi-star text-warning"></i>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12">
+                    <div class="placeholder-message card p-4 text-center">
+                        <i class="bi bi-book display-4 text-muted mb-3"></i>
+                        <h4>You haven't added any books yet</h4>
+                        <p class="text-muted">Start building your personal library</p>
+                        <a href="{{ url_for('upload_book') }}" class="btn btn-primary mt-2">Add a Book</a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Reading Challenges Section -->
+    <div class="book-section mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3><i class="bi bi-trophy me-2"></i>Reading Challenges</h3>
+            <a href="#" class="text-decoration-none">View All</a>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5>2025 Reading Challenge</h5>
+                        <p class="text-muted">{{ completed_books }} of {{ goal_books }} books</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5>Genre Explorer</h5>
+                        <p class="text-muted">Read books from 5 different genres this year</p>
+                        <div class="d-flex flex-wrap">
+                            <span class="badge bg-success m-1">Fiction</span>
+                            <span class="badge bg-success m-1">Fantasy</span>
+                            <span class="badge bg-light text-dark m-1">Sci-Fi</span>
+                            <span class="badge bg-light text-dark m-1">Biography</span>
+                            <span class="badge bg-light text-dark m-1">History</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <!-- Not logged in view -->
+    <div class="row mb-5">
+        <div class="col-md-8">
+            <div class="welcome-message">
+                <h1>Welcome to BookGraph!</h1>
+                <p class="lead">Your personal book tracking companion. Track what you read, when you read, and discover new books.</p>
+                <div class="mt-4">
+                    <a href="{{ url_for('signup') }}" class="btn btn-primary btn-lg me-2">Sign Up</a>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg">Log In</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="img-fluid">
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="row mb-5">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-book display-4 text-primary mb-3"></i>
+                    <h3>Track Your Reading</h3>
+                    <p>Keep a detailed log of all your books, reading sessions, and progress.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-graph-up display-4 text-primary mb-3"></i>
+                    <h3>Visualize Progress</h3>
+                    <p>See statistics and insights about your reading habits and achievements.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-people display-4 text-primary mb-3"></i>
+                    <h3>Connect with Readers</h3>
+                    <p>Share your favorite books and discover recommendations from others.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Public Books Section - Always visible -->
+<div class="book-section mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3><i class="bi bi-globe me-2"></i>Public Bookshelf</h3>
+        <a href="#" class="text-decoration-none">Explore More</a>
+    </div>
+    <div class="row">
+        {% if public_books %}
+            {% for book in public_books %}
+                <div class="col-md-3 col-sm-6 mb-4">
+                    <div class="book-card card h-100">
+                        <div class="book-cover-container">
+                            <img src="{{ book.cover_image }}" alt="{{ book.title }}" class="card-img-top book-cover">
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ book.title }}</h5>
+                            <p class="card-text text-muted">{{ book.author }}</p>
+                            <p class="small">
+                                <i class="bi bi-person-circle me-1"></i>
+                                <span>{{ book.creator }}</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="placeholder-message card p-4 text-center">
+                    <i class="bi bi-globe display-4 text-muted mb-3"></i>
+                    <h4>No public books available</h4>
+                    <p class="text-muted">Be the first to share your reading journey</p>
+                    <a href="#" class="btn btn-primary mt-2">Share a Book</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}
