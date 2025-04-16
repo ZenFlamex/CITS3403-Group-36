@@ -1,5 +1,5 @@
 from app import application
-from flask import render_template, g
+from flask import render_template, g, request
 from app.data import USER, BOOKS  # Import the data from data.py
 
 
@@ -81,9 +81,30 @@ def upload_book():
 def add_book():
     return "Add Book Page - Coming Soon"
 
+
 @application.route('/my_books')
 def my_books():
-    return "My Books Page - Coming Soon"
+    current_username = USER.get('username') if USER and USER.get('is_authenticated') else None
+
+    if current_username:
+        user_books = [book for book in BOOKS if book.get('creator') == current_username]
+
+        status_order = {'In Progress': 0, 'Completed': 1, 'Dropped': 2}
+        user_books.sort(key=lambda b: status_order.get(b.get('status'), 3))
+
+        view_mode = request.args.get('view', 'card')
+        if view_mode not in ['card', 'row']:
+            view_mode = 'card'
+
+        return render_template('my_books.html',
+                               title="My Books",
+                               current_books=user_books,
+                               view_mode=view_mode)
+    else:
+        flash('Please log in to view your books.', 'warning')
+        return redirect(url_for('login'))
+
+
 
 @application.route('/profile')
 def profile():
