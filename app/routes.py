@@ -1,19 +1,27 @@
 from app import application
-from flask import render_template, g, request
+from flask import flash, redirect, render_template, g, request, url_for
 from app.data import USER, BOOKS  # Import the data from data.py
 
+@application.before_request
+def load_current_user():
+    if USER and USER.get('is_authenticated', False):
+        g.current_user = USER
+        g.username = USER['username']
+    else:
+        g.current_user = None
+        g.username = None
 
 @application.context_processor
 def inject_user():
-    # Always make current_user and username available to templates, mainly for header to show proper nav items
-    if USER and USER.get('is_authenticated', False):
-        return {'current_user': USER, 'username': USER['username']}
-    else:
-        return {'current_user': None, 'username': None}
+    return {
+        'current_user': getattr(g, 'current_user', None),
+        'username': getattr(g, 'username', None)
+    }
+
 
 @application.route('/')
 def index():
-    current_username = USER['username'] if USER and USER.get('is_authenticated', False) else None
+    current_username = g.username 
     
     # Filter books for different sections based on the consolidated list
     if current_username:
@@ -62,7 +70,9 @@ def signup():
 
 @application.route('/login')
 def login():
-    return render_template('login.html') 
+    message = request.args.get('message')
+    return render_template('login.html', message=message)
+
 
 @application.route('/forgot_password')
 def forgot_password():
@@ -84,7 +94,7 @@ def add_book():
 
 @application.route('/my_books')
 def my_books():
-    current_username = USER.get('username') if USER and USER.get('is_authenticated') else None
+    current_username = g.username 
 
     if current_username:
         user_books = [book for book in BOOKS if book.get('creator') == current_username]
@@ -101,8 +111,8 @@ def my_books():
                                current_books=user_books,
                                view_mode=view_mode)
     else:
-        flash('Please log in to view your books.', 'warning')
-        return redirect(url_for('login'))
+        return redirect(url_for('login', message='Please log in to view your books.'))
+
 
 
 
