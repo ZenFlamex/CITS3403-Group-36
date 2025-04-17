@@ -45,7 +45,20 @@ The design focuses on user-friendliness with a clean, responsive interface. The 
 2. **Install dependencies**:
    Ensure you have Python 3.x and `pip` installed on your machine. Then, install the required dependencies by running the following command in the project directory:
 
+   If on windows:
+
    ```bash
+   wsl
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+   If on linux:
+
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
    pip install -r requirements.txt
    ```
 
