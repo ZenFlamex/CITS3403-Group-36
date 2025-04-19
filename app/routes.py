@@ -44,6 +44,7 @@ def index():
         
         return render_template(
             'index.html',
+            title="Home",
             favorite_books=favorite_books,
             current_books=current_books,
             public_books=public_books,
@@ -60,37 +61,32 @@ def index():
         
         return render_template(
             'index.html',
+            title="Home",
             current_user=None,
             public_books=public_books
         )
 
 @application.route('/signup') 
 def signup():
-    return render_template('signup.html')
+    return render_template('signup.html', title="Sign Up")
 
 @application.route('/login')
 def login():
     message = request.args.get('message')
-    return render_template('login.html', message=message)
+    return render_template('login.html', title='Login',message=message)
 
 
 @application.route('/forgot_password')
 def forgot_password():
-    return render_template('forgot_password.html')
+    return render_template('forgot_password.html', title='Forgot Password')
 
 @application.route('/stats')
 def stats():
-    return render_template('stats.html')
+    return render_template('stats.html', title='Statistics')
 
 @application.route('/upload_book')
 def upload_book():
-    return render_template('upload_book.html')
-
-# New routes for future functionality
-@application.route('/add_book')
-def add_book():
-    return "Add Book Page - Coming Soon"
-
+    return render_template('upload_book.html', title='Add Book')
 
 @application.route('/my_books')
 def my_books():
@@ -111,7 +107,7 @@ def my_books():
                                current_books=user_books,
                                view_mode=view_mode)
     else:
-        return redirect(url_for('login', message='Please log in to view your books.'))
+        return redirect(url_for('login',title='My Books', message='Please log in to view your books.'))
 
 
 
@@ -119,3 +115,7 @@ def my_books():
 @application.route('/profile')
 def profile():
     return "Profile Page - Coming Soon"
+
+@application.route('/settings')
+def settings():
+    return "Settings Page - Coming Soon"

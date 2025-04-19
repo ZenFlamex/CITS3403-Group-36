@@ -13,7 +13,7 @@ The **Personal Book Reading Tracker** application allows users to track their re
 - **Quotes**: Save memorable quotes from books for later reference.
 - **Reading Stats**: Get statistics like average pages read per day, reading speed comparison between fiction and non-fiction, and month-over-month progress.
 - **Privacy Settings**: Toggle the visibility of books (public/private) and make your entire account public or private.
-- **Friends**: Add friends to share reading data with them and view their progress.
+- **Share your books to your friends**: Look up friends and share specific books with them
 
 The application also provides insightful statistics such as:
 
