@@ -175,3 +175,9 @@ nav a {
     background-color: #6c757d;
 }
 
+
+/* --- Set smaller font size for <small> tags only inside the notification dropdown --- */
+.notification-dropdown-menu .dropdown-item small {
+    font-size: 0.75em; 
+    line-height: 1.2; 
+}

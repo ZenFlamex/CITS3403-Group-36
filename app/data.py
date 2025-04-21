@@ -1,6 +1,7 @@
 # Simulated user data - in a real application this would come from a database
 # To simulate logging out, comment out this USER variable or set is_authenticated to False
 USER = {
+
     'username': 'bookworm',
     'email': 'bookworm@example.com',
     'is_authenticated': True
@@ -150,3 +151,54 @@ BOOKS = [
         'is_public': True
     }
 ]
+
+#
+NOTIFICATIONS_DATA = [
+    {
+        'id': 101, 'receiver_username': 'bookworm', 'sender': 'system', 'type': 'goal', 'is_read': False,
+        'text': 'You updated your annual goal to 50 books!', 
+        'timestamp': '2025-04-20 10:00:00', 'link': '#'
+    },
+    {
+        'id': 102, 'receiver_username': 'bookworm', 'sender': 'ZenFlame', 'type': 'friend', 'is_read': False,
+        'text': "added 'Red Queen' to their shelf.", 
+        'timestamp': '2025-04-21 09:30:00', 'link': '#'
+    },
+    {
+        'id': 103, 'receiver_username': 'bookworm', 'sender': 'bre', 'type': 'comment', 'is_read': True,
+        'text': "commented on your review of 'War Storm'.", 
+        'timestamp': '2025-04-19 15:00:00', 'link': '#'
+    },
+    {
+        'id': 104, 'receiver_username': 'bookworm', 'sender': 'Jake', 'type': 'friend', 'is_read': False,
+        'text': "finished reading 'Glass Sword'.",
+        'timestamp': '2025-04-22 14:15:00', 'link': '#'
+    },
+    {
+        'id': 105, 'receiver_username': 'bookworm', 'sender': 'system', 'type': 'goal', 'is_read': False,
+        'text': 'You are halfway towards your reading goal this month!', 
+        'timestamp': '2025-04-23 08:00:00', 'link': '#'
+    },
+    {
+        'id': 106, 'receiver_username': 'bookworm', 'sender': 'Andy', 'type': 'comment', 'is_read': False,
+        'text': "replied to your comment on 'King's Cage'.",
+        'timestamp': '2025-04-23 11:20:00', 'link': '#'
+    },
+    {
+        'id': 107, 'receiver_username': 'bookworm', 'sender': 'Sarah', 'type': 'friend', 'is_read': True,
+        'text': "liked your review of 'A Court of Thorns and Roses'.", 
+        'timestamp': '2025-04-24 09:00:00', 'link': '#'
+    },
+    {
+        'id': 108, 'receiver_username': 'bookworm', 'sender': 'system', 'type': 'goal', 'is_read': False,
+        'text': "You finished reading 5 books this month!", 
+        'timestamp': '2025-04-25 10:00:00', 'link': '#'
+    },
+    {
+        'id': 109, 'receiver_username': 'other_user', 'sender': 'admin', 'type': 'announcement', 'is_read': False,
+        'text': 'The site will undergo maintenance early Sunday morning.', 
+        'timestamp': '2025-04-22 12:00:00', 'link': '#'
+    }
+] 
+    
+

@@ -1,6 +1,6 @@
 from app import application
 from flask import flash, redirect, render_template, g, request, url_for
-from app.data import USER, BOOKS  # Import the data from data.py
+from app.data import USER, BOOKS, NOTIFICATIONS_DATA  # Import the data from data.py
 
 @application.before_request
 def load_current_user():
@@ -13,12 +13,33 @@ def load_current_user():
 
 @application.context_processor
 def inject_user():
+    username_from_g = getattr(g, 'username', None)
+    current_user_from_g = getattr(g, 'current_user', None)
+    is_authenticated_from_g = current_user_from_g is not None
+
+    recent_notifications = []
+    unread_count = 0
+    
+    if is_authenticated_from_g and username_from_g:
+        user_notifications = [n for n in NOTIFICATIONS_DATA if n.get('receiver_username') == username_from_g]
+    
+        # Sort notifications by timestamp in descending order
+        try:
+             user_notifications.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+        except TypeError:
+             pass
+
+        unread_count = len([n for n in user_notifications if not n.get('is_read')])
+      
+        recent_notifications = user_notifications[:5]
+
     return {
-        'current_user': getattr(g, 'current_user', None),
-        'username': getattr(g, 'username', None)
+        'current_user': current_user_from_g, 
+        'username': username_from_g,
+        'is_authenticated': is_authenticated_from_g, 
+        'recent_notifications': recent_notifications,
+        'unread_count': unread_count
     }
-
-
 @application.route('/')
 def index():
     current_username = g.username 
@@ -119,3 +140,22 @@ def profile():
 @application.route('/settings')
 def settings():
     return "Settings Page - Coming Soon"
+
+
+@application.route('/notifications')
+def notifications():
+    current_username = g.username
+
+    if current_username:
+        user_notifications = [n for n in NOTIFICATIONS_DATA if n.get('receiver_username') == current_username]
+        try:
+             user_notifications.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+        except TypeError:
+             pass
+
+        return render_template('notifications.html',
+                               title="Notifications",
+                               notifications=user_notifications) 
+    else:
+        flash('Please log in to view notifications.', 'warning')
+        return redirect(url_for('login'))

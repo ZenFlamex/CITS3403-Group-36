@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{{ title }}</h1>
+    <hr>
+
+    <div class="list-group">
+        {% if notifications %}
+        
+            {% for notification in notifications %}
+              
+                <a href="{{ notification.link if notification.link else '#' }}"
+                   class="list-group-item list-group-item-action {% if not notification.is_read %}list-group-item-light fw-bold{% else %}list-group-item-secondary text-muted{% endif %}"
+                   aria-current="{% if not notification.is_read %}true{% else %}false{% endif %}">
+
+                    <div class="d-flex w-100 justify-content-between">
+                        
+                        <span class="mb-1">
+                            {% if not notification.is_read %}
+                            <span class="me-2 text-primary"><i class="bi bi-circle-fill" style="font-size: 0.5em;"></i></span> 
+                            {% else %}
+                            <span class="me-2" style="width: 0.5em; display: inline-block;"></span> 
+                            {% endif %}
+                
+                            {% if notification.type == 'goal' %}
+                                <i class="bi bi-flag-fill me-2 text-primary" title="Goal Update"></i>
+                            {% elif notification.type == 'friend' %}
+                                <i class="bi bi-people-fill me-2 text-info" title="Friend Activity"></i>
+                            {% elif notification.type == 'comment' %}
+                                <i class="bi bi-chat-left-text-fill me-2 text-success" title="New Comment"></i>
+                            {% elif notification.type == 'announcement' %}
+                                <i class="bi bi-megaphone-fill me-2 text-danger" title="Announcement"></i>
+                            {% else %}
+                                <i class="bi bi-bell me-2 text-secondary" title="Notification"></i>
+                            {% endif %}
+
+                            {% if notification.sender and notification.sender not in ['system', 'admin'] %}
+                               <strong>{{ notification.sender }}</strong> {{ notification.text }}
+                            {% else %}
+                               {{ notification.text }}
+                            {% endif %}
+                        </span>
+                         
+                        <small class="text-nowrap">
+                            {{ notification.timestamp }}
+                        </small>
+                    </div>
+                </a>
+            {% endfor %}
+        {% else %}
+            <div class="list-group-item">
+                You have no notifications yet.
+            </div>
+        {% endif %}
+    </div> {# End list-group #}
+
+</div> {# End container #}
+{% endblock %}
