@@ -157,5 +157,4 @@ def notifications():
                                title="Notifications",
                                notifications=user_notifications) 
     else:
-        flash('Please log in to view notifications.', 'warning')
         return redirect(url_for('login'))

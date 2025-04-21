@@ -11,7 +11,7 @@
             {% for notification in notifications %}
               
                 <a href="{{ notification.link if notification.link else '#' }}"
-                   class="list-group-item list-group-item-action {% if not notification.is_read %}list-group-item-light fw-bold{% else %}list-group-item-secondary text-muted{% endif %}"
+                   class="list-group-item list-group-item-action {% if not notification.is_read %}list-group-item-light {% else %}list-group-item-secondary text-muted{% endif %}"
                    aria-current="{% if not notification.is_read %}true{% else %}false{% endif %}">
 
                     <div class="d-flex w-100 justify-content-between">
