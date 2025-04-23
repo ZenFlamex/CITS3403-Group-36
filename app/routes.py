@@ -1,6 +1,17 @@
 from app import application
 from flask import flash, redirect, render_template, g, request, url_for
 from app.data import USER, BOOKS, NOTIFICATIONS_DATA  # Import the data from data.py
+from datetime import datetime
+
+#  Format a timestamp string into 'DD MonthName YYYY HH:MM' format.
+@application.template_filter('datetimeformat') 
+def format_datetime_custom(value, format="%d %B %Y %H:%M"):
+    if value is None: return ""
+    try:
+        if isinstance(value, datetime): dt_object = value
+        else: dt_object = datetime.strptime(str(value), '%Y-%m-%d %H:%M:%S')
+        return dt_object.strftime(format)
+    except (ValueError, TypeError): return str(value)
 
 @application.before_request
 def load_current_user():
@@ -165,4 +176,5 @@ def notifications():
                                title="Notifications",
                                notifications=user_notifications) 
     else:
+        flash('Please log in to view notifications.', 'warning')
         return redirect(url_for('login'))
