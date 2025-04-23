@@ -135,7 +135,15 @@ def my_books():
 
 @application.route('/profile')
 def profile():
-    return "Profile Page - Coming Soon"
+    if g.current_user:
+        recent_books = [book for book in BOOKS if book['creator'] == g.current_user['username']][:4]
+        return render_template(
+            'profile.html',
+            title='My Profile',
+            recent_books=recent_books
+        )
+    else:
+        return redirect(url_for('login', message='Please log in to view your profile.'))
 
 @application.route('/settings')
 def settings():
