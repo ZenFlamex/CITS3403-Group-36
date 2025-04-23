@@ -11,7 +11,7 @@
     </div>
     <div class="col-md-6">
         <p style="font-size: 1.5rem;"><strong>Username:</strong> {{ username }}</p>
-        <p style="font-size: 1.5rem;"><strong>Email:</strong> {{ email }}</p>
+        <p style="font-size: 1.5rem;"><strong>Email:</strong> {{ current_user.email }}</p>
         <p style="font-size: 1.5rem;"><strong>Birthday:</strong> [Birthday Placeholder]</p>
         <p style="font-size: 1.5rem;"><strong>Join Date:</strong> [Join Date Placeholder]</p>
         <p style="font-size: 1.5rem;"><strong>Favourite Genre:</strong> [Favourite Genre Placeholder]</p>
@@ -21,13 +21,16 @@
 <div class="row" style="margin-top: 2rem;">
     <div class="col-12">
         <h3>Recently Added Books</h3>
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-4">
+        <div class="row">
             {% for book in recent_books %}
-            <div class="col">
-                <div class="card h-100">
-                    <img src="{{ book.cover_image }}" alt="{{ book.title }} Cover" class="card-img-top" style="height: 150px; object-fit: cover;">
-                    <div class="card-body text-center">
-                        <h5 class="card-title mt-3">{{ book.title }}</h5>
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="book-card card h-100">
+                    <div class="book-cover-container">
+                        <img src="{{ book.cover_image }}" alt="{{ book.title }} Cover" class="card-img-top book-cover">
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ book.title }}</h5>
+                        <p class="card-text text-muted">{{ book.author }}</p>
                     </div>
                 </div>
             </div>

@@ -119,8 +119,6 @@ def profile():
         return render_template(
             'profile.html',
             title='My Profile',
-            username=g.current_user['username'],
-            email=g.current_user['email'],
             recent_books=recent_books
         )
     else:
