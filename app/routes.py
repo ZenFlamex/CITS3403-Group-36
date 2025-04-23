@@ -115,7 +115,7 @@ def my_books():
 @application.route('/profile')
 def profile():
     if g.current_user:
-        recent_books = [book for book in BOOKS if book['creator'] == g.current_user['username']][:5]
+        recent_books = [book for book in BOOKS if book['creator'] == g.current_user['username']][:4]
         return render_template(
             'profile.html',
             title='My Profile',
