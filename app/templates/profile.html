@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>My Profile</h2>
+
+<div class="row" style="align-items: center;">
+    <div class="col-md-6 text-center">
+        <div style="width: 300px; height: 300px; background-color: #ccc; border-radius: 50%; margin: 0 auto;">
+        </div>
+        <p style="font-size: 1.2rem; font-weight: bold;">Profile Picture</p>
+    </div>
+    <div class="col-md-6">
+        <p style="font-size: 1.5rem;"><strong>Username:</strong> {{ username }}</p>
+        <p style="font-size: 1.5rem;"><strong>Email:</strong> {{ email }}</p>
+        <p style="font-size: 1.5rem;"><strong>Birthday:</strong> [Birthday Placeholder]</p>
+        <p style="font-size: 1.5rem;"><strong>Join Date:</strong> [Join Date Placeholder]</p>
+        <p style="font-size: 1.5rem;"><strong>Favourite Genre:</strong> [Favourite Genre Placeholder]</p>
+    </div>
+</div>
+
+<div class="row" style="margin-top: 2rem;">
+    <div class="col-12">
+        <h3>Recently Added Books</h3>
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-4">
+            {% for book in recent_books %}
+            <div class="col">
+                <div class="card h-100">
+                    <img src="{{ book.cover_image }}" alt="{{ book.title }} Cover" class="card-img-top" style="height: 150px; object-fit: cover;">
+                    <div class="card-body text-center">
+                        <h5 class="card-title mt-3">{{ book.title }}</h5>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}
