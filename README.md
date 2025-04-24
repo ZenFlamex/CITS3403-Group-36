@@ -62,13 +62,13 @@ The design focuses on user-friendliness with a clean, responsive interface. The 
    pip install -r requirements.txt
    ```
 
-3. **Set SECRET_KEY in Environemnt**
+3. **Set SECRET_KEY in Environment**
 
    ```bash
    SECRET_KEY=your_secure_secret_key
    ```
 
-4. **Setup Datbase**
+4. **Setup Database**
 
    ```bash
    flask db upgrade
