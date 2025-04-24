@@ -30,6 +30,8 @@ class Book(db.Model):
     total_pages: so.Mapped[int] = so.mapped_column(sa.Integer, default=0)
     is_favorite: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False)
     is_public: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False)
+    start_date: so.Mapped[Optional[datetime]] = so.mapped_column(sa.DateTime, nullable=True)
+    end_date: so.Mapped[Optional[datetime]] = so.mapped_column(sa.DateTime, nullable=True)
     
     # Relationships
     creator: so.Mapped[User] = so.relationship(back_populates="books")

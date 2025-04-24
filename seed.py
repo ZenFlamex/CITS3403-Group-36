@@ -39,7 +39,8 @@ def seed_database():
     
     # Function to simulate adding a book through a form
     def add_book(title, author, cover_image, creator, rating=0, status="In Progress", 
-                 current_page=0, total_pages=0, is_favorite=False, is_public=False):
+                 current_page=0, total_pages=0, is_favorite=False, is_public=False,
+                 start_date=None, end_date=None):
         """Simulate adding a book through a form submission"""
         book = Book(
             title=title,
@@ -51,7 +52,9 @@ def seed_database():
             current_page=current_page,
             total_pages=total_pages,
             is_favorite=is_favorite,
-            is_public=is_public
+            is_public=is_public,
+            start_date=start_date,
+            end_date=end_date
         )
         db.session.add(book)
         return book
@@ -67,7 +70,9 @@ def seed_database():
         current_page=400, 
         total_pages=400, 
         is_favorite=True, 
-        is_public=True
+        is_public=True,
+        start_date=datetime.strptime('2025-01-15', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-02-10', '%Y-%m-%d')
     )
     
     add_book(
@@ -80,7 +85,9 @@ def seed_database():
         current_page=350, 
         total_pages=350, 
         is_favorite=True, 
-        is_public=False
+        is_public=False,
+        start_date=datetime.strptime('2025-02-15', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-03-10', '%Y-%m-%d')
     )
     
     add_book(
@@ -93,7 +100,9 @@ def seed_database():
         current_page=380, 
         total_pages=380, 
         is_favorite=True, 
-        is_public=False
+        is_public=False,
+        start_date=datetime.strptime('2025-03-15', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-04-10', '%Y-%m-%d')
     )
     
     add_book(
@@ -106,7 +115,8 @@ def seed_database():
         current_page=235, 
         total_pages=502, 
         is_favorite=False, 
-        is_public=False
+        is_public=False,
+        start_date=datetime.strptime('2025-04-15', '%Y-%m-%d')
     )
     
     add_book(
@@ -119,7 +129,9 @@ def seed_database():
         current_page=400, 
         total_pages=400, 
         is_favorite=False, 
-        is_public=True
+        is_public=True,
+        start_date=datetime.strptime('2025-05-15', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-06-10', '%Y-%m-%d')
     )
     
     add_book(
@@ -132,7 +144,9 @@ def seed_database():
         current_page=45, 
         total_pages=208, 
         is_favorite=False, 
-        is_public=False
+        is_public=False,
+        start_date=datetime.strptime('2025-06-15', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-07-10', '%Y-%m-%d')
     )
     
     # Add books for other users
@@ -146,7 +160,9 @@ def seed_database():
         current_page=223, 
         total_pages=223, 
         is_favorite=True, 
-        is_public=True
+        is_public=True,
+        start_date=datetime.strptime('2025-01-01', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-01-20', '%Y-%m-%d')
     )
     
     add_book(
@@ -159,7 +175,9 @@ def seed_database():
         current_page=387, 
         total_pages=387, 
         is_favorite=True, 
-        is_public=True
+        is_public=True,
+        start_date=datetime.strptime('2025-02-01', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-02-20', '%Y-%m-%d')
     )
     
     add_book(
@@ -172,7 +190,9 @@ def seed_database():
         current_page=384, 
         total_pages=384, 
         is_favorite=True, 
-        is_public=True
+        is_public=True,
+        start_date=datetime.strptime('2025-03-01', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-03-20', '%Y-%m-%d')
     )
     
     add_book(
@@ -185,7 +205,9 @@ def seed_database():
         current_page=416, 
         total_pages=416, 
         is_favorite=True, 
-        is_public=True
+        is_public=True,
+        start_date=datetime.strptime('2025-04-01', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-04-20', '%Y-%m-%d')
     )
     
     add_book(
@@ -198,7 +220,9 @@ def seed_database():
         current_page=404, 
         total_pages=404, 
         is_favorite=True, 
-        is_public=True
+        is_public=True,
+        start_date=datetime.strptime('2025-05-01', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-05-20', '%Y-%m-%d')
     )
     
     db.session.commit()
