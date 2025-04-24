@@ -1,6 +1,6 @@
-from app import application
+from app import application, db
+from app.models import User, Book, Notification
 from flask import flash, redirect, render_template, g, request, url_for
-from app.data import USER, BOOKS, NOTIFICATIONS_DATA  # Import the data from data.py
 from datetime import datetime
 
 #  Format a timestamp string into 'DD MonthName YYYY HH:MM' format.
@@ -15,64 +15,89 @@ def format_datetime_custom(value, format="%d %B %Y %H:%M"):
 
 @application.before_request
 def load_current_user():
-    if USER and USER.get('is_authenticated', False):
-        g.current_user = USER
-        g.username = USER['username']
+    # Temporary before password is implemented
+    user = User.query.filter_by(is_authenticated=True).first()
+    if user:
+        g.current_user = user
+        g.username = user.username
+        g.user_id = user.id
     else:
         g.current_user = None
         g.username = None
+        g.user_id = None
 
 @application.context_processor
 def inject_user():
     username_from_g = getattr(g, 'username', None)
     current_user_from_g = getattr(g, 'current_user', None)
+    user_id_from_g = getattr(g, 'user_id', None)
     is_authenticated_from_g = current_user_from_g is not None
 
     recent_notifications = []
     unread_count = 0
     
-    if is_authenticated_from_g and username_from_g:
-        user_notifications = [n for n in NOTIFICATIONS_DATA if n.get('receiver_username') == username_from_g]
-    
-        # Sort notifications by timestamp in descending order
-        try:
-             user_notifications.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
-        except TypeError:
-             pass
-
-        unread_count = len([n for n in user_notifications if not n.get('is_read')])
+    if is_authenticated_from_g and user_id_from_g:
+        user_notifications = Notification.query.filter_by(
+            receiver_id=user_id_from_g
+        ).order_by(Notification.timestamp.desc()).all()
+        
+        unread_count = Notification.query.filter_by(
+            receiver_id=user_id_from_g,
+            is_read=False
+        ).count()
       
         recent_notifications = user_notifications[:5]
 
     return {
         'current_user': current_user_from_g, 
         'username': username_from_g,
+        'user_id': user_id_from_g,
         'is_authenticated': is_authenticated_from_g, 
         'recent_notifications': recent_notifications,
         'unread_count': unread_count
     }
+
 @application.route('/')
 def index():
-    current_username = g.username 
+    current_user_id = g.user_id
     
-    # Filter books for different sections based on the consolidated list
-    if current_username:
-        favorite_books = [book for book in BOOKS if book['creator'] == current_username and book['is_favorite']]
-        current_books = [book for book in BOOKS if book['creator'] == current_username]
-
-        # Sort by In Progress → Completed → Dropped
+    if current_user_id:
+        # Query books from the database
+        favorite_books = Book.query.filter_by(
+            creator_id=current_user_id, 
+            is_favorite=True
+        ).all()
+        
+        current_books = Book.query.filter_by(
+            creator_id=current_user_id
+        ).all()
+        
+        # Sort by status
         status_order = {'In Progress': 0, 'Completed': 1, 'Dropped': 2}
-        current_books.sort(key=lambda b: status_order.get(b['status'], 3))
+        current_books.sort(key=lambda b: status_order.get(b.status, 3))
 
-        public_books = [book for book in BOOKS if book['is_public'] and book['creator'] != current_username] 
+        public_books = Book.query.filter(
+            Book.is_public == True,
+            Book.creator_id != current_user_id
+        ).all()
         
         # Calculate reading statistics
-        reading_count = len([b for b in current_books if b['status'] == 'In Progress'])
-        completed_count = len([b for b in current_books if b['status'] == 'Completed'])
-        pages_read = sum(min(b['current_page'], b['total_pages']) for b in current_books)
-        hours_read = 145 # Placeholder for hours read, to be calculated later     
-        completed_books = len([b for b in current_books if b['status'] == 'Completed'])
-        goal_books = 50  # Will be set by the user in the future     
+        reading_count = Book.query.filter_by(
+            creator_id=current_user_id,
+            status='In Progress'
+        ).count()
+        
+        completed_count = Book.query.filter_by(
+            creator_id=current_user_id,
+            status='Completed'
+        ).count()
+        
+        # Calculate pages read
+        all_user_books = Book.query.filter_by(creator_id=current_user_id).all()
+        pages_read = sum(min(b.current_page, b.total_pages) for b in all_user_books)
+        
+        hours_read = 145  # Placeholder for hours read, to be calculated later     
+        goal_books = 50   # Will be set by the user in the future     
         
         return render_template(
             'index.html',
@@ -84,12 +109,12 @@ def index():
             completed_count=completed_count,
             pages_read=pages_read,
             hours_read=hours_read,
-            completed_books=completed_books,
+            completed_books=completed_count,
             goal_books=goal_books
         )
     else:
         # User is not authenticated - show all public books
-        public_books = [book for book in BOOKS if book['is_public']]
+        public_books = Book.query.filter_by(is_public=True).all()
         
         return render_template(
             'index.html',
@@ -105,8 +130,7 @@ def signup():
 @application.route('/login')
 def login():
     message = request.args.get('message')
-    return render_template('login.html', title='Login',message=message)
-
+    return render_template('login.html', title='Login', message=message)
 
 @application.route('/forgot_password')
 def forgot_password():
@@ -122,13 +146,13 @@ def upload_book():
 
 @application.route('/my_books')
 def my_books():
-    current_username = g.username 
+    current_user_id = g.user_id
 
-    if current_username:
-        user_books = [book for book in BOOKS if book.get('creator') == current_username]
+    if current_user_id:
+        user_books = Book.query.filter_by(creator_id=current_user_id).all()
 
         status_order = {'In Progress': 0, 'Completed': 1, 'Dropped': 2}
-        user_books.sort(key=lambda b: status_order.get(b.get('status'), 3))
+        user_books.sort(key=lambda b: status_order.get(b.status, 3))
 
         view_mode = request.args.get('view', 'card')
         if view_mode not in ['card', 'row']:
@@ -139,15 +163,15 @@ def my_books():
                                current_books=user_books,
                                view_mode=view_mode)
     else:
-        return redirect(url_for('login',title='My Books', message='Please log in to view your books.'))
-
-
-
+        return redirect(url_for('login', title='My Books', message='Please log in to view your books.'))
 
 @application.route('/profile')
 def profile():
     if g.current_user:
-        recent_books = [book for book in BOOKS if book['creator'] == g.current_user['username']][:4]
+        recent_books = Book.query.filter_by(
+            creator_id=g.current_user.id
+        ).limit(4).all()
+        
         return render_template(
             'profile.html',
             title='My Profile',
@@ -160,17 +184,14 @@ def profile():
 def settings():
     return "Settings Page - Coming Soon"
 
-
 @application.route('/notifications')
 def notifications():
-    current_username = g.username
+    current_user_id = g.user_id
 
-    if current_username:
-        user_notifications = [n for n in NOTIFICATIONS_DATA if n.get('receiver_username') == current_username]
-        try:
-             user_notifications.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
-        except TypeError:
-             pass
+    if current_user_id:
+        user_notifications = Notification.query.filter_by(
+            receiver_id=current_user_id
+        ).order_by(Notification.timestamp.desc()).all()
 
         return render_template('notifications.html',
                                title="Notifications",
