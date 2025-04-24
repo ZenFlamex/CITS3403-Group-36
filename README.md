@@ -62,16 +62,28 @@ The design focuses on user-friendliness with a clean, responsive interface. The 
    pip install -r requirements.txt
    ```
 
-3. **Set SECRET_KEY in Environemtn**
+3. **Set SECRET_KEY in Environemnt**
 
    ```bash
-   to be added
+   SECRET_KEY=your_secure_secret_key
    ```
 
-4. **Run Flask server using**
+4. **Setup Datbase**
+
+   ```bash
+   flask db upgrade
+   ```
+
+5. **\*Seed the Database with Initial Data**
+
+   ```bash
+   python seed.py
+   ```
+
+6. **Run Flask server using**
 
    ```bash
    python run.py
    ```
 
-5. **_Open in browser visit http://127.0.0.1:5000 to view homepage_**
+7. **_Open in browser visit http://127.0.0.1:5000 to view homepage_**

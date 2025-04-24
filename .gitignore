@@ -1,3 +1,9 @@
+# Python 
 __pycache__/
+
+# Virtual Environment
 venv/
 .flaskenv
+
+# Database files
+*.db
