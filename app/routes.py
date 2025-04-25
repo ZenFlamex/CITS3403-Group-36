@@ -179,10 +179,7 @@ def profile():
 @application.route('/settings')
 @login_required
 def settings():
-    if not g.current_user:
-        flash('Please log in to access settings.', 'warning')
-        return redirect(url_for('login'))
-
+    email = current_user.email
     return render_template('settings.html', title='Settings')
 
 @application.route('/notifications')
