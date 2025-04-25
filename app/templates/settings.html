@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Settings</h1>
+    <hr>
+
+    <div class="mb-5">
+        <h3>Account Settings</h3>
+        <form method="POST" action="{{ url_for('settings') }}">
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" id="email" name="email" class="form-control" value="{{ current_user.email }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" id="username" name="username" class="form-control" value="{{ current_user.username }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Change Password</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="Enter new password">
+            </div>
+            <div class="mb-3">
+                <button type="submit" class="btn btn-danger">Delete Account</button>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
+    </div>
+
+    <div>
+        <h3>Theme</h3>
+        <form method="POST" action="{{ url_for('settings') }}">
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="theme" id="lightMode" value="light" {% if current_user.theme == 'light' %}checked{% endif %}>
+                <label class="form-check-label" for="lightMode">
+                    Light Mode
+                </label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="theme" id="darkMode" value="dark" {% if current_user.theme == 'dark' %}checked{% endif %}>
+                <label class="form-check-label" for="darkMode">
+                    Dark Mode
+                </label>
+            </div>
+            <button type="submit" class="btn btn-primary mt-3">Save Theme</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

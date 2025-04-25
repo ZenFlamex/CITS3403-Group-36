@@ -182,7 +182,11 @@ def profile():
 
 @application.route('/settings')
 def settings():
-    return "Settings Page - Coming Soon"
+    if not g.current_user:
+        flash('Please log in to access settings.', 'warning')
+        return redirect(url_for('login'))
+
+    return render_template('settings.html', title='Settings')
 
 @application.route('/notifications')
 def notifications():
@@ -199,3 +203,17 @@ def notifications():
     else:
         flash('Please log in to view notifications.', 'warning')
         return redirect(url_for('login'))
+    
+@application.route('/book/<int:book_id>')
+def book_detail(book_id):
+    book = Book.query.get_or_404(book_id)
+
+    if book.creator_id != g.current_user.id:
+        flash("You don't have permission to view this book.", "danger")
+        return redirect(url_for('my_books'))
+
+    return render_template(
+        'book_detail.html',
+        title=book.title,
+        book=book
+    )

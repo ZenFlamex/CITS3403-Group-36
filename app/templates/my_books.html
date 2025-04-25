@@ -23,38 +23,40 @@
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
                 {% for book in current_books %}
                 <div class="col">
-                    <div class="book-card card h-100">
-                        <div class="book-cover-container position-relative">
-                            <img src="{{ book.cover_image }}" alt="{{ book.title }} Cover" class="card-img-top book-cover">
-                            <div class="status-badge 
-                            {% if book.status == 'Completed' %}badge-completed{% endif %}
-                            {% if book.status == 'In Progress' %}badge-progress{% endif %}
-                            {% if book.status == 'Dropped' %}badge-dropped{% endif %}
-                        ">
-                            {{ book.status }}
-                            </div>
-                        </div>
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title fs-6">{{ book.title }}</h5>
-                            <p class="card-text text-muted small mb-2 flex-grow-1">{{ book.author }}</p>
-                            
-                            {% if book.status == 'In Progress' %}
-                            <div class="book-progress mb-2">
-                                <small class="text-muted">{{ book.current_page }}/{{ book.total_pages }} pages</small>
-                            </div>
-                            {% endif %}
-                            {% if book.status == 'Completed'%}
-                                <div class="book-rating">
-                                    {% for i in range(book.rating) %}
-                                        <i class="bi bi-star-fill text-warning"></i>
-                                    {% endfor %}
-                                    {% for i in range(5 - book.rating) %}
-                                        <i class="bi bi-star text-warning"></i>
-                                    {% endfor %}
+                    <a href="{{ url_for('book_detail', book_id=book.id) }}" class="text-decoration-none">
+                        <div class="book-card card h-100">
+                            <div class="book-cover-container position-relative">
+                                <img src="{{ book.cover_image }}" alt="{{ book.title }} Cover" class="card-img-top book-cover">
+                                <div class="status-badge 
+                                    {% if book.status == 'Completed' %}badge-completed{% endif %}
+                                    {% if book.status == 'In Progress' %}badge-progress{% endif %}
+                                    {% if book.status == 'Dropped' %}badge-dropped{% endif %}
+                                ">
+                                    {{ book.status }}
                                 </div>
-                            {% endif %}
+                            </div>
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title fs-6">{{ book.title }}</h5>
+                                <p class="card-text text-muted small mb-2 flex-grow-1">{{ book.author }}</p>
+                                
+                                {% if book.status == 'In Progress' %}
+                                <div class="book-progress mb-2">
+                                    <small class="text-muted">{{ book.current_page }}/{{ book.total_pages }} pages</small>
+                                </div>
+                                {% endif %}
+                                {% if book.status == 'Completed'%}
+                                    <div class="book-rating">
+                                        {% for i in range(book.rating) %}
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                        {% endfor %}
+                                        {% for i in range(5 - book.rating) %}
+                                            <i class="bi bi-star text-warning"></i>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
                 {% endfor %}
             </div>
