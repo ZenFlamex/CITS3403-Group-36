@@ -2,7 +2,7 @@ from app import application, db
 from app.models import User, Book, Notification
 from flask import flash, redirect, render_template, g, request, url_for, session
 from datetime import datetime
-from app.forms import LoginForm
+from app.forms import LoginForm, SignupForm
 from flask_login import current_user, login_user, logout_user, login_required
 from urllib.parse import urlsplit
 
@@ -107,9 +107,24 @@ def index():
             public_books=public_books
         )
 
-@application.route('/signup') 
+@application.route('/signup', methods=['GET', 'POST']) 
 def signup():
-    return render_template('signup.html', title="Sign Up")
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+
+    form = SignupForm() 
+    if form.validate_on_submit(): 
+        user = User(username=form.username.data, email=form.email.data)
+        user.set_password(form.password.data)
+       
+        db.session.add(user)
+        db.session.commit()
+        flash('Congratulations, you are now a registered user!', 'success')
+      
+        return redirect(url_for('login')) 
+
+    return render_template('signup.html', title="Sign Up", form=form)
+
 
 @application.route('/login', methods=['GET', 'POST'])
 def login():
