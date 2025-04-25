@@ -21,8 +21,12 @@ def format_datetime_custom(value, format="%d %B %Y %H:%M"):
 def inject_notifications():
     recent_notifications = []
     unread_count = 0
+    username = None
+    
     # Check if the user is logged in using Flask-Login's current_user
     if current_user.is_authenticated:
+        username = current_user.username
+        
         user_notifications = Notification.query.filter_by(
             receiver_id=current_user.id 
         ).order_by(Notification.timestamp.desc()).limit(5).all() 
@@ -35,7 +39,8 @@ def inject_notifications():
 
     return {
         'recent_notifications': recent_notifications,
-        'unread_count': unread_count
+        'unread_count': unread_count,
+        'username': username
     }
 
 @application.route('/')
