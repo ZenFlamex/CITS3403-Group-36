@@ -115,6 +115,11 @@ nav a {
     margin-top: 0.5rem;
 }
 
+/* Card title color fix */
+.book-card .card-title {
+    color: #333 !important;
+}
+
 /* Progress and Stats */
 .reading-stat,
 .book-progress {

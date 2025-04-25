@@ -188,31 +188,25 @@ def settings():
 @application.route('/notifications')
 @login_required 
 def notifications():
-    current_user_id = g.user_id
+    user_notifications = Notification.query.filter_by(
+        receiver_id=current_user.id
+    ).order_by(Notification.timestamp.desc()).all()
 
-    if current_user_id:
-        user_notifications = Notification.query.filter_by(
-            receiver_id=current_user_id
-        ).order_by(Notification.timestamp.desc()).all()
-
-        return render_template('notifications.html',
-                               title="Notifications",
-                               notifications=user_notifications) 
-    else:
-        flash('Please log in to view notifications.', 'warning')
-        return redirect(url_for('login'))
+    return render_template('notifications.html',
+                           title="Notifications",
+                           notifications=user_notifications) 
     
 @application.route('/book/<int:book_id>')
 def book_detail(book_id):
     book = Book.query.get_or_404(book_id)
 
     # If the book is private and the current user is not the creator
-    if not book.is_public and book.creator_id != g.current_user.id:
+    if not book.is_public and (not current_user.is_authenticated or book.creator_id != current_user.id):
         flash("You don't have permission to view this book.", "danger")
         return redirect(url_for('my_books'))
 
     # If the book is public, allow viewing but only the creator can edit
-    can_edit = book.creator_id == g.current_user.id
+    can_edit = current_user.is_authenticated and book.creator_id == current_user.id
 
     return render_template(
         'book_detail.html',
