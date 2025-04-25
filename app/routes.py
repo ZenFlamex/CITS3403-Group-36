@@ -1,7 +1,10 @@
 from app import application, db
 from app.models import User, Book, Notification
-from flask import flash, redirect, render_template, g, request, url_for
+from flask import flash, redirect, render_template, g, request, url_for, session
 from datetime import datetime
+from app.forms import LoginForm
+from flask_login import current_user, login_user, logout_user, login_required
+from urllib.parse import urlsplit
 
 #  Format a timestamp string into 'DD MonthName YYYY HH:MM' format.
 @application.template_filter('datetimeformat') 
@@ -13,56 +16,33 @@ def format_datetime_custom(value, format="%d %B %Y %H:%M"):
         return dt_object.strftime(format)
     except (ValueError, TypeError): return str(value)
 
-@application.before_request
-def load_current_user():
-    # Temporary before password is implemented
-    user = User.query.filter_by(is_authenticated=True).first()
-    if user:
-        g.current_user = user
-        g.username = user.username
-        g.user_id = user.id
-    else:
-        g.current_user = None
-        g.username = None
-        g.user_id = None
 
 @application.context_processor
-def inject_user():
-    username_from_g = getattr(g, 'username', None)
-    current_user_from_g = getattr(g, 'current_user', None)
-    user_id_from_g = getattr(g, 'user_id', None)
-    is_authenticated_from_g = current_user_from_g is not None
-
+def inject_notifications():
     recent_notifications = []
     unread_count = 0
-    
-    if is_authenticated_from_g and user_id_from_g:
+    # Check if the user is logged in using Flask-Login's current_user
+    if current_user.is_authenticated:
         user_notifications = Notification.query.filter_by(
-            receiver_id=user_id_from_g
-        ).order_by(Notification.timestamp.desc()).all()
-        
+            receiver_id=current_user.id 
+        ).order_by(Notification.timestamp.desc()).limit(5).all() 
+
         unread_count = Notification.query.filter_by(
-            receiver_id=user_id_from_g,
+            receiver_id=current_user.id,
             is_read=False
         ).count()
-      
-        recent_notifications = user_notifications[:5]
+        recent_notifications = user_notifications 
 
     return {
-        'current_user': current_user_from_g, 
-        'username': username_from_g,
-        'user_id': user_id_from_g,
-        'is_authenticated': is_authenticated_from_g, 
         'recent_notifications': recent_notifications,
         'unread_count': unread_count
     }
 
 @application.route('/')
 def index():
-    current_user_id = g.user_id
-    
-    if current_user_id:
-        # Query books from the database
+    if current_user.is_authenticated:
+        current_user_id = current_user.id
+
         favorite_books = Book.query.filter_by(
             creator_id=current_user_id, 
             is_favorite=True
@@ -119,7 +99,6 @@ def index():
         return render_template(
             'index.html',
             title="Home",
-            current_user=None,
             public_books=public_books
         )
 
@@ -127,60 +106,78 @@ def index():
 def signup():
     return render_template('signup.html', title="Sign Up")
 
-@application.route('/login')
+@application.route('/login', methods=['GET', 'POST'])
 def login():
-    message = request.args.get('message')
-    return render_template('login.html', title='Login', message=message)
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+
+    form = LoginForm() 
+    if form.validate_on_submit(): 
+        user = User.query.filter_by(email=form.email.data).first() 
+        if user is None or not user.check_password(form.password.data):
+            flash('Invalid email or password.', 'danger') 
+            return redirect(url_for('login'))
+        login_user(user, remember=form.remember_me.data)
+        flash('Login successful!', 'success')
+
+        next_page = request.args.get('next')
+ 
+        if not next_page or urlsplit(next_page).netloc != '':
+            next_page = url_for('index') 
+        return redirect(next_page)
+
+    return render_template('login.html', title='Login', form=form)
+
+@application.route('/logout')
+@login_required
+def logout():
+    logout_user() 
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('index'))
 
 @application.route('/forgot_password')
 def forgot_password():
     return render_template('forgot_password.html', title='Forgot Password')
 
 @application.route('/stats')
+@login_required
 def stats():
     return render_template('stats.html', title='Statistics')
 
 @application.route('/upload_book')
+@login_required
 def upload_book():
     return render_template('upload_book.html', title='Add Book')
 
 @application.route('/my_books')
+@login_required
 def my_books():
-    current_user_id = g.user_id
+    user_books = Book.query.filter_by(creator_id=current_user.id).all()
 
-    if current_user_id:
-        user_books = Book.query.filter_by(creator_id=current_user_id).all()
+    status_order = {'In Progress': 0, 'Completed': 1, 'Dropped': 2}
+    user_books.sort(key=lambda b: status_order.get(b.status, 3))
 
-        status_order = {'In Progress': 0, 'Completed': 1, 'Dropped': 2}
-        user_books.sort(key=lambda b: status_order.get(b.status, 3))
+    view_mode = request.args.get('view', 'card')
+    if view_mode not in ['card', 'row']:
+        view_mode = 'card'
 
-        view_mode = request.args.get('view', 'card')
-        if view_mode not in ['card', 'row']:
-            view_mode = 'card'
-
-        return render_template('my_books.html',
-                               title="My Books",
-                               current_books=user_books,
-                               view_mode=view_mode)
-    else:
-        return redirect(url_for('login', title='My Books', message='Please log in to view your books.'))
+    return render_template('my_books.html',
+                            title="My Books",
+                            current_books=user_books,
+                            view_mode=view_mode)
 
 @application.route('/profile')
+@login_required
 def profile():
-    if g.current_user:
-        recent_books = Book.query.filter_by(
-            creator_id=g.current_user.id
-        ).limit(4).all()
-        
-        return render_template(
-            'profile.html',
-            title='My Profile',
-            recent_books=recent_books
-        )
-    else:
-        return redirect(url_for('login', message='Please log in to view your profile.'))
+    recent_books = Book.query.filter_by(creator_id=current_user.id).limit(4).all() 
+    return render_template( 
+        'profile.html',
+        title='My Profile',
+        recent_books=recent_books
+    )
 
 @application.route('/settings')
+@login_required
 def settings():
     if not g.current_user:
         flash('Please log in to access settings.', 'warning')
@@ -189,6 +186,7 @@ def settings():
     return render_template('settings.html', title='Settings')
 
 @application.route('/notifications')
+@login_required 
 def notifications():
     current_user_id = g.user_id
 

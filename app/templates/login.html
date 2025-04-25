@@ -1,12 +1,6 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% if message %}
-<div class="alert alert-warning alert-dismissible fade show" role="alert">
-  {{ message }}
-  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-</div>
-{% endif %}
 
 <div class="row justify-content-center">
     <div class="col-md-6 col-lg-5">
@@ -19,22 +13,36 @@
 
             <h2 class="text-center mb-2">Welcome back</h2>
             <p class="text-center text-muted mb-4">Please enter your details.</p>
-            
-            <form action="{{ url_for('login') }}" method="POST">
+
+            <form action="" method="POST" novalidate>
+                {{ form.hidden_tag() }} {# CSRF token #}
+
                 <div class="form-group mb-3">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" class="form-control" required>
+                    {{ form.email.label(class="form-label") }}
+                    {{ form.email(class="form-control", size=32) }}
+                    {% for error in form.email.errors %}
+                        <span class="text-danger small">[{{ error }}]</span>
+                    {% endfor %}
                 </div>
 
                 <div class="form-group mb-3">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" class="form-control" required>
+                    {{ form.password.label(class="form-label") }}
+                    {{ form.password(class="form-control", size=32) }}
+                    {% for error in form.password.errors %}
+                        <span class="text-danger small">[{{ error }}]</span>
+                    {% endfor %}
                 </div>
+
+                 <div class="form-check mb-3">
+                    {{ form.remember_me(class="form-check-input") }}
+                    {{ form.remember_me.label(class="form-check-label") }}
+                </div>
+
                 <div class="text-end mb-4">
-                    <a href="{{ url_for('forgot_password') }}"><small>Forgot password</a>
+                    <a href="{{ url_for('forgot_password') }}"><small>Forgot password</small></a>
                 </div>
 
-                <button type="submit" class="signup-btn btn w-100 fw-bold text-white">Sign in</button>
+                {{ form.submit(class="signup-btn btn w-100 fw-bold text-white") }}
             </form>
 
             <div class="login-link text-center mt-3">

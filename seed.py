@@ -12,27 +12,26 @@ def seed_database():
     db.session.commit()
     
     # Create users - Simulates user signup process
-    def create_user(username, email, is_authenticated=False):
+    def create_user(username, email, password):
         """Simulate user creation through signup form"""
         # This would normally include password hashing
         user = User(
             username=username,
             email=email,
-            is_authenticated=is_authenticated
         )
+        user.set_password(password)
         db.session.add(user)
         db.session.flush()  # Get ID before committing
         return user
-    
-    # Main user (logged in) .To simulate logged out make is_authenticated=False
-    bookworm = create_user('bookworm', 'bookworm@example.com', is_authenticated=True)
+   
+    bookworm = create_user('bookworm', 'bookworm@example.com', 'password123')
     
     # Additional users
-    wizardfan01 = create_user('wizardfan01', 'wizardfan01@example.com', is_authenticated=False)
-    scifibro = create_user('scifibro', 'scifibro@example.com')
-    readingjourney = create_user('readingjourney', 'readingjourney@example.com')
-    galactic42 = create_user('galactic42', 'galactic42@example.com')
-    literarylion = create_user('literarylion', 'literarylion@example.com')
+    wizardfan01 = create_user('wizardfan01', 'wizardfan01@example.com', 'password456')
+    scifibro = create_user('scifibro', 'scifibro@example.com', 'password789')
+    readingjourney = create_user('readingjourney', 'readingjourney@example.com', 'passwordabc')
+    galactic42 = create_user('galactic42', 'galactic42@example.com', 'passworddef')
+    literarylion = create_user('literarylion', 'literarylion@example.com', 'passwordghi')
     
     db.session.commit()
     print("Users created successfully")
