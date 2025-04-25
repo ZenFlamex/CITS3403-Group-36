@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+
+        <div class="col-md-4 text-center position-relative me-4"> 
+            <img src="{{ book.cover_image }}" alt="{{ book.title }} Cover" class="img-fluid rounded mb-3">
+            
+            <div class="position-absolute top-0 end-0 px-3 py-1 rounded-bottom 
+                {% if book.status == 'Completed' %}bg-success text-white{% elif book.status == 'Dropped' %}bg-secondary text-white{% else %}bg-warning text-dark{% endif %}">
+                {{ book.status }}
+            </div>
+
+            <h3 class="mt-2">{{ book.title }}</h3>
+            <p class="text-muted">by {{ book.author }}</p>
+
+            {% if can_edit %}
+            <div class="d-grid gap-2">
+                <div class="dropdown">
+                    <button class="btn btn-warning dropdown-toggle" type="button" id="changeStatusDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        Current Status: {{ book.status }}
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="changeStatusDropdown">
+                        <li>
+                            <a class="dropdown-item {% if book.status == 'Completed' %}active{% endif %}" href="#">Mark as Completed</a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item {% if book.status == 'Dropped' %}active{% endif %}" href="#">Mark as Dropped</a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item {% if book.status == 'In Progress' %}active{% endif %}" href="#">Mark as In Progress</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <button class="btn btn-primary d-flex align-items-center justify-content-center">
+                    {% if book.is_favorited %}
+                        <i class="bi bi-heart-fill text-danger me-2"></i> Remove from Favorites
+                    {% else %}
+                        <i class="bi bi-heart me-2"></i> Add to Favorites
+                    {% endif %}
+                </button>
+
+                <button class="btn btn-secondary">
+                    {% if book.is_public %}
+                        Make Private
+                    {% else %}
+                        Make Public
+                    {% endif %}
+                </button>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-7"> 
+            <h2>Book Details</h2>
+            <p><strong>Status:</strong> {{ book.status }}</p>
+            <p><strong>Pages:</strong> {{ book.current_page }}/{{ book.total_pages }}</p>
+            <p><strong>Rating:</strong>
+                {% for i in range(book.rating) %}
+                    <i class="bi bi-star-fill text-warning"></i>
+                {% endfor %}
+                {% for i in range(5 - book.rating) %}
+                    <i class="bi bi-star text-warning"></i>
+                {% endfor %}
+            </p>
+            <p><strong>Start Date:</strong> {{ book.start_date.strftime('%d %B %Y') if book.start_date else 'N/A' }}</p>
+            <p><strong>End Date:</strong> {{ book.end_date.strftime('%d %B %Y') if book.end_date else 'N/A' }}</p>
+            <p><strong>Public:</strong> {{ 'Yes' if book.is_public else 'No' }}</p>
+
+            {% if can_edit %}
+            <div class="mt-4">
+                {% if book.status == 'Dropped' %}
+                    <div class="alert alert-secondary">
+                        This book is marked as dropped. Change the status to add more notes.
+                    </div>
+                {% else %}
+                    <h3>Add Reading Progress</h3>
+
+                    <div class="form-group mb-3">
+                        <label for="pagesRead" class="form-label">Pages Read</label>
+                        <input type="number" id="pagesRead" name="pagesRead" class="form-control" placeholder="Enter the number of pages read" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="readingNotes" class="form-label">Notes</label>
+                        <textarea id="readingNotes" class="form-control" rows="4" placeholder="Write your notes here..."></textarea>
+                    </div>
+                    <button class="btn btn-success mt-3">Save Progress</button>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <div class="mt-5">
+                <h3>Reading History</h3>
+                <p class="text-muted">No reading history available yet.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

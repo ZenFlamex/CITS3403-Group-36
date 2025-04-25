@@ -21,8 +21,12 @@ def format_datetime_custom(value, format="%d %B %Y %H:%M"):
 def inject_notifications():
     recent_notifications = []
     unread_count = 0
+    username = None
+    
     # Check if the user is logged in using Flask-Login's current_user
     if current_user.is_authenticated:
+        username = current_user.username
+        
         user_notifications = Notification.query.filter_by(
             receiver_id=current_user.id 
         ).order_by(Notification.timestamp.desc()).limit(5).all() 
@@ -35,7 +39,8 @@ def inject_notifications():
 
     return {
         'recent_notifications': recent_notifications,
-        'unread_count': unread_count
+        'unread_count': unread_count,
+        'username': username
     }
 
 @application.route('/')
@@ -179,16 +184,35 @@ def profile():
 @application.route('/settings')
 @login_required
 def settings():
-    return "Settings Page - Coming Soon"
+    email = current_user.email
+    return render_template('settings.html', title='Settings')
 
 @application.route('/notifications')
 @login_required 
 def notifications():
     user_notifications = Notification.query.filter_by(
-        receiver_id=current_user.id 
+        receiver_id=current_user.id
     ).order_by(Notification.timestamp.desc()).all()
 
     return render_template('notifications.html',
                            title="Notifications",
-                           notifications=user_notifications)
- 
+                           notifications=user_notifications) 
+    
+@application.route('/book/<int:book_id>')
+def book_detail(book_id):
+    book = Book.query.get_or_404(book_id)
+
+    # If the book is private and the current user is not the creator
+    if not book.is_public and (not current_user.is_authenticated or book.creator_id != current_user.id):
+        flash("You don't have permission to view this book.", "danger")
+        return redirect(url_for('my_books'))
+
+    # If the book is public, allow viewing but only the creator can edit
+    can_edit = current_user.is_authenticated and book.creator_id == current_user.id
+
+    return render_template(
+        'book_detail.html',
+        title=book.title,
+        book=book,
+        can_edit=can_edit
+    )

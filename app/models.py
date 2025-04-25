@@ -26,7 +26,7 @@ class User(UserMixin,db.Model):
         return check_password_hash(self.password_hash, password)
     
     def __repr__(self):
-        return f'<User {self.username}>'
+        return f'{self.username}'
 
 @login.user_loader
 def load_user(id):
