@@ -23,8 +23,7 @@ def seed_database():
         db.session.add(user)
         db.session.flush()  # Get ID before committing
         return user
-    
-    # Main user (logged in) .To simulate logged out make is_authenticated=False
+   
     bookworm = create_user('bookworm', 'bookworm@example.com', 'password123')
     
     # Additional users
