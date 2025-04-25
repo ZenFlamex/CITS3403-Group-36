@@ -16,7 +16,7 @@ class User(db.Model):
     notifications_received: so.Mapped[List["Notification"]] = so.relationship(back_populates="receiver")
     
     def __repr__(self):
-        return f'<User {self.username}>'
+        return f'{self.username}'
 
 class Book(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)

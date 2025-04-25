@@ -208,12 +208,17 @@ def notifications():
 def book_detail(book_id):
     book = Book.query.get_or_404(book_id)
 
-    if book.creator_id != g.current_user.id:
+    # If the book is private and the current user is not the creator
+    if not book.is_public and book.creator_id != g.current_user.id:
         flash("You don't have permission to view this book.", "danger")
         return redirect(url_for('my_books'))
+
+    # If the book is public, allow viewing but only the creator can edit
+    can_edit = book.creator_id == g.current_user.id
 
     return render_template(
         'book_detail.html',
         title=book.title,
-        book=book
+        book=book,
+        can_edit=can_edit
     )

@@ -52,23 +52,25 @@
             {% if favorite_books %}
                 {% for book in favorite_books %}
                     <div class="col-md-3 col-sm-6 mb-4">
-                        <div class="book-card card h-100">
-                            <div class="book-cover-container">
-                                <img src="{{ book.cover_image }}" alt="{{ book.title }}" class="card-img-top book-cover">
-                            </div>
-                            <div class="card-body">
-                                <h5 class="card-title">{{ book.title }}</h5>
-                                <p class="card-text text-muted">{{ book.author }}</p>
-                                <div class="book-rating">
-                                    {% for i in range(book.rating) %}
-                                        <i class="bi bi-star-fill text-warning"></i>
-                                    {% endfor %}
-                                    {% for i in range(5 - book.rating) %}
-                                        <i class="bi bi-star text-warning"></i>
-                                    {% endfor %}
+                        <a href="{{ url_for('book_detail', book_id=book.id) }}" class="text-decoration-none">
+                            <div class="book-card card h-100">
+                                <div class="book-cover-container">
+                                    <img src="{{ book.cover_image }}" alt="{{ book.title }}" class="card-img-top book-cover">
+                                </div>
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ book.title }}</h5>
+                                    <p class="card-text text-muted">{{ book.author }}</p>
+                                    <div class="book-rating">
+                                        {% for i in range(book.rating) %}
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                        {% endfor %}
+                                        {% for i in range(5 - book.rating) %}
+                                            <i class="bi bi-star text-warning"></i>
+                                        {% endfor %}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
                 {% endfor %}
             {% else %}
@@ -94,38 +96,39 @@
             {% if current_books %}
                 {% for book in current_books %}
                     <div class="col-md-3 col-sm-6 mb-4">
-                        <div class="book-card card h-100">
-                            <div class="book-cover-container">
-                                <img src="{{ book.cover_image }}" alt="{{ book.title }}" class="card-img-top book-cover">
-                                <div class="status-badge 
-                                    {% if book.status == 'Completed' %}badge-completed{% endif %}
-                                    {% if book.status == 'In Progress' %}badge-progress{% endif %}
-                                    {% if book.status == 'Dropped' %}badge-dropped{% endif %}
-                                ">
-                                    {{ book.status }}
+                        <a href="{{ url_for('book_detail', book_id=book.id) }}" class="text-decoration-none">
+                            <div class="book-card card h-100">
+                                <div class="book-cover-container">
+                                    <img src="{{ book.cover_image }}" alt="{{ book.title }}" class="card-img-top book-cover">
+                                    <div class="status-badge 
+                                        {% if book.status == 'Completed' %}badge-completed{% endif %}
+                                        {% if book.status == 'In Progress' %}badge-progress{% endif %}
+                                        {% if book.status == 'Dropped' %}badge-dropped{% endif %}
+                                    ">
+                                        {{ book.status }}
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ book.title }}</h5>
+                                    <p class="card-text text-muted">{{ book.author }}</p>
+                                
+                                    {% if book.status == 'In Progress' %}
+                                        <p class="book-progress">{{ book.current_page }}/{{ book.total_pages }} pages</p>
+                                    {% endif %}
+                                
+                                    {% if book.status == 'Completed' %}
+                                        <div class="book-rating">
+                                            {% for i in range(book.rating) %}
+                                                <i class="bi bi-star-fill text-warning"></i>
+                                            {% endfor %}
+                                            {% for i in range(5 - book.rating) %}
+                                                <i class="bi bi-star text-warning"></i>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
                                 </div>
                             </div>
-                            <div class="card-body">
-                                <h5 class="card-title">{{ book.title }}</h5>
-                                <p class="card-text text-muted">{{ book.author }}</p>
-                            
-                                {% if book.status == 'In Progress' %}
-                                    <p class="book-progress">{{ book.current_page }}/{{ book.total_pages }} pages</p>
-                                {% endif %}
-                            
-                                {% if book.status == 'Completed' %}
-                                    <div class="book-rating">
-                                        {% for i in range(book.rating) %}
-                                            <i class="bi bi-star-fill text-warning"></i>
-                                        {% endfor %}
-                                        {% for i in range(5 - book.rating) %}
-                                            <i class="bi bi-star text-warning"></i>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                        </div>
+                        </a>
                     </div>
                 {% endfor %}
             {% else %}
@@ -233,19 +236,21 @@
         {% if public_books %}
             {% for book in public_books %}
                 <div class="col-md-3 col-sm-6 mb-4">
-                    <div class="book-card card h-100">
-                        <div class="book-cover-container">
-                            <img src="{{ book.cover_image }}" alt="{{ book.title }}" class="card-img-top book-cover">
+                    <a href="{{ url_for('book_detail', book_id=book.id) }}" class="text-decoration-none">
+                        <div class="book-card card h-100">
+                            <div class="book-cover-container">
+                                <img src="{{ book.cover_image }}" alt="{{ book.title }}" class="card-img-top book-cover">
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">{{ book.title }}</h5>
+                                <p class="card-text text-muted">{{ book.author }}</p>
+                                <p class="small">
+                                    <i class="bi bi-person-circle me-1"></i>
+                                    <span>{{ book.creator }}</span>
+                                </p>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <h5 class="card-title">{{ book.title }}</h5>
-                            <p class="card-text text-muted">{{ book.author }}</p>
-                            <p class="small">
-                                <i class="bi bi-person-circle me-1"></i>
-                                <span>{{ book.creator }}</span>
-                            </p>
-                        </div>
-                    </div>
+                    </a>
                 </div>
             {% endfor %}
         {% else %}

@@ -68,34 +68,36 @@
         <div class="book-section-row mb-5">
             <ul class="list-group">
                 {% for book in current_books %}
-                <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center">
-                    <div class="me-3 mb-2 mb-md-0">
-                        <h5 class="mb-1 fs-6">{{ book.title }}</h5>
-                        <small class="text-muted">{{ book.author }}</small>
-                    </div>
-                    <div class="text-end">
-                        <span class="badge rounded-pill 
-                            {% if book.status == 'Completed' %}badge-completed{% endif %}
-                            {% if book.status == 'In Progress' %}badge-progress{% endif %}
-                            {% if book.status == 'Dropped' %}badge-dropped{% endif %}
-                        ">
-                            {{ book.status }}
-                        </span>
-                        {% if book.status == 'In Progress'%}
-                        <small class="book-progress-row text-muted d-block">{{ book.current_page }}/{{ book.total_pages }} pages</small>
-                        {% endif %}
-                        {% if book.status == 'Completed'%}
-                        <div class="book-rating-row d-block">
-                            {% for i in range(book.rating) %}
-                                <i class="bi bi-star-fill text-warning small"></i>
-                            {% endfor %}
-                            {% for i in range(5 - book.rating) %}
-                                <i class="bi bi-star text-warning small"></i>
-                            {% endfor %}
+                <a href="{{ url_for('book_detail', book_id=book.id) }}" class="text-decoration-none">
+                    <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center">
+                        <div class="me-3 mb-2 mb-md-0">
+                            <h5 class="mb-1 fs-6">{{ book.title }}</h5>
+                            <small class="text-muted">{{ book.author }}</small>
                         </div>
-                        {% endif %}
-                    </div>
-                </li>
+                        <div class="text-end">
+                            <span class="badge rounded-pill 
+                                {% if book.status == 'Completed' %}badge-completed{% endif %}
+                                {% if book.status == 'In Progress' %}badge-progress{% endif %}
+                                {% if book.status == 'Dropped' %}badge-dropped{% endif %}
+                            ">
+                                {{ book.status }}
+                            </span>
+                            {% if book.status == 'In Progress' %}
+                            <small class="book-progress-row text-muted d-block">{{ book.current_page }}/{{ book.total_pages }} pages</small>
+                            {% endif %}
+                            {% if book.status == 'Completed' %}
+                            <div class="book-rating-row d-block">
+                                {% for i in range(book.rating) %}
+                                    <i class="bi bi-star-fill text-warning small"></i>
+                                {% endfor %}
+                                {% for i in range(5 - book.rating) %}
+                                    <i class="bi bi-star text-warning small"></i>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </li>
+                </a>
                 {% endfor %}
             </ul>
         </div>
