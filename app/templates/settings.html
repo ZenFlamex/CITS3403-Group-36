@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block title %}Settings{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <h1>Settings</h1>
@@ -7,43 +9,81 @@
 
     <div class="mb-5">
         <h3>Account Settings</h3>
-        <form method="POST" action="{{ url_for('settings') }}">
+        <form method="POST" action="{{ url_for('settings') }}" novalidate>
+            {{ account_form.hidden_tag() }}
+
             <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="email" id="email" name="email" class="form-control" value="{{ current_user.email }}" required>
+                {{ account_form.username.label(class="form-label") }}
+                {{ account_form.username(class="form-control", value=current_user.username) }}
+                {% for error in account_form.username.errors %}
+                    <span class="text-danger small">[{{ error }}]</span>
+                {% endfor %}
             </div>
+
             <div class="mb-3">
-                <label for="username" class="form-label">Username</label>
-                <input type="text" id="username" name="username" class="form-control" value="{{ current_user.username }}" required>
+                {{ account_form.email.label(class="form-label") }}
+                {{ account_form.email(class="form-control", value=current_user.email) }}
+                {% for error in account_form.email.errors %}
+                    <span class="text-danger small">[{{ error }}]</span>
+                {% endfor %}
             </div>
+
             <div class="mb-3">
-                <label for="password" class="form-label">Change Password</label>
-                <input type="password" id="password" name="password" class="form-control" placeholder="Enter new password">
+                {{ account_form.password.label(class="form-label") }} <small class="text-muted">(Leave blank to keep current password)</small>
+                {{ account_form.password(class="form-control", placeholder="Enter new password") }}
+                {% for error in account_form.password.errors %}
+                    <span class="text-danger small">[{{ error }}]</span>
+                {% endfor %}
             </div>
-            <div class="mb-3">
-                <button type="submit" class="btn btn-danger">Delete Account</button>
+
+             <div class="mb-3">
+                {{ account_form.confirm_password.label(class="form-label") }}
+                {{ account_form.confirm_password(class="form-control", placeholder="Confirm new password") }}
+                {% for error in account_form.confirm_password.errors %}
+                    <span class="text-danger small">[{{ error }}]</span>
+                {% endfor %}
             </div>
-            <button type="submit" class="btn btn-primary">Save Changes</button>
+
+            {{ account_form.submit_account(class="btn btn-primary") }}
         </form>
     </div>
 
-    <div>
+    <div class="mb-5">
         <h3>Theme</h3>
-        <form method="POST" action="{{ url_for('settings') }}">
+        <form method="POST" action="{{ url_for('settings') }}" novalidate>
+            {{ theme_form.hidden_tag() }}
+
+            {% for subfield in theme_form.theme %}
             <div class="form-check">
-                <input class="form-check-input" type="radio" name="theme" id="lightMode" value="light" {% if current_user.theme == 'light' %}checked{% endif %}>
-                <label class="form-check-label" for="lightMode">
-                    Light Mode
-                </label>
+                {{ subfield(class="form-check-input") }}
+                {{ subfield.label(class="form-check-label") }}
             </div>
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="theme" id="darkMode" value="dark" {% if current_user.theme == 'dark' %}checked{% endif %}>
-                <label class="form-check-label" for="darkMode">
-                    Dark Mode
-                </label>
-            </div>
-            <button type="submit" class="btn btn-primary mt-3">Save Theme</button>
+            {% endfor %}
+            {% for error in theme_form.theme.errors %}
+                <span class="text-danger small">[{{ error }}]</span>
+            {% endfor %}
+
+            {{ theme_form.submit_theme(class="btn btn-primary mt-3") }}
         </form>
     </div>
+
+    <div class="mt-5 pt-4 border-top border-danger">
+         <h3>Delete Account</h3>
+         <p class="text-danger">Warning: This action is permanent and cannot be undone. All your data, including tracked books and reading progress, will be lost.</p>
+         <form method="POST" action="{{ url_for('settings') }}" novalidate onsubmit="return confirm('Are you absolutely sure you want to delete your account? This cannot be undone.');">
+             {{ delete_form.hidden_tag() }}
+
+             <div class="mb-3">
+                 {{ delete_form.password.label(class="form-label") }}
+                 {{ delete_form.password(class="form-control") }}
+                 {% for error in delete_form.password.errors %}
+                     <span class="text-danger small">[{{ error }}]</span>
+                 {% endfor %}
+             </div>
+
+             {{ delete_form.submit_delete(class="btn btn-danger") }}
+         </form>
+    </div>
+
 </div>
 {% endblock %}

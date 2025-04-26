@@ -12,9 +12,10 @@ class User(UserMixin,db.Model):
     email: so.Mapped[str] = so.mapped_column(sa.String(120), index=True, unique=True)
     password_hash: so.Mapped[Optional[str]] = so.mapped_column(sa.String(256))
     
-    
+    theme: so.Mapped[str] = so.mapped_column(sa.String(10), default='light', nullable=False)
+
     # Relationships
-    books: so.Mapped[List["Book"]] = so.relationship(back_populates="creator")
+    books: so.Mapped[List["Book"]] = so.relationship(back_populates="creator", cascade="all, delete-orphan")
     notifications_received: so.Mapped[List["Notification"]] = so.relationship(back_populates="receiver")
 
     def set_password(self, password):
@@ -26,7 +27,8 @@ class User(UserMixin,db.Model):
         return check_password_hash(self.password_hash, password)
     
     def __repr__(self):
-        return f'{self.username}'
+        return f'<User {self.username}>'
+
 
 @login.user_loader
 def load_user(id):
