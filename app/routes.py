@@ -239,12 +239,15 @@ def settings():
             logout_user() 
             user_to_delete = db.session.get(User, user_id_to_delete)
             if user_to_delete:
-                 db.session.delete(user_to_delete)
-                 db.session.commit()
-                 flash('Your account has been permanently deleted.', 'success')
-                 return redirect(url_for('index')) 
-                 flash('Error deleting account.', 'danger')
-                 return redirect(url_for('settings')) 
+                # First delete all notifications associated with this user
+                Notification.query.filter_by(receiver_id=user_id_to_delete).delete()
+                # Now delete the user (books will be deleted by cascade)
+                db.session.delete(user_to_delete)
+                db.session.commit()
+                flash('Your account has been permanently deleted.', 'success')
+                return redirect(url_for('index'))
+            flash('Error deleting account.', 'danger')
+            return redirect(url_for('settings')) 
         else:
              if account_form.errors:
                  for field, errors in account_form.errors.items():
