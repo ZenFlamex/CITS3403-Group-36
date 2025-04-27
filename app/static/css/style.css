@@ -186,3 +186,42 @@ nav a {
     font-size: 0.75em; 
     line-height: 1.2; 
 }
+
+
+/* --- Dark Mode Specific Styles --- */
+
+[data-bs-theme="dark"] {
+
+    body {
+        background-color: #212529; 
+    }
+
+    .welcome-message h1,h2,h3,h4,h5,h6,
+    .welcome-message p.lead {
+        color: #dee2e6; 
+    }
+
+    .card.bg-light {
+        background-color: #212529 !important; 
+        border-color: #444 !important;      
+    }
+
+    .reading-stat {
+        color: #f8f9fa !important; 
+    }
+
+    .book-card.card {
+        background-color: #2b2f34; 
+        border-color: #444;
+    }
+
+
+    .book-card .card-title {
+        color: #dee2e6 !important; 
+    }
+
+     .book-section h3 {
+          color: #dee2e6; 
+     }
+
+}

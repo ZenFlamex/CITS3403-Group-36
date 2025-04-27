@@ -2,7 +2,7 @@ from app import application, db
 from app.models import User, Book, Notification
 from flask import flash, redirect, render_template, g, request, url_for, session
 from datetime import datetime
-from app.forms import LoginForm, SignupForm
+from app.forms import LoginForm, SignupForm, AccountSettingsForm, ThemeForm, DeleteAccountForm
 from flask_login import current_user, login_user, logout_user, login_required
 from urllib.parse import urlsplit
 
@@ -196,11 +196,82 @@ def profile():
         recent_books=recent_books
     )
 
-@application.route('/settings')
+@application.route('/settings', methods=['GET', 'POST']) 
 @login_required
 def settings():
-    email = current_user.email
-    return render_template('settings.html', title='Settings')
+    account_form = AccountSettingsForm(prefix='account') 
+    theme_form = ThemeForm(prefix='theme')
+    delete_form = DeleteAccountForm(prefix='delete')
+
+    if request.method == 'POST':
+        if account_form.submit_account.data and account_form.validate_on_submit():
+            if current_user.username != account_form.username.data:
+                 existing_user = User.query.filter(User.username == account_form.username.data, User.id != current_user.id).first()
+                 if existing_user:
+                     flash('Username already taken.', 'danger')
+                     return redirect(url_for('settings'))
+                 current_user.username = account_form.username.data
+                 flash('Username updated.', 'success')
+
+            if current_user.email != account_form.email.data:
+                 existing_user = User.query.filter(User.email == account_form.email.data, User.id != current_user.id).first()
+                 if existing_user:
+                     flash('Email already registered.', 'danger')
+                     return redirect(url_for('settings'))
+                 current_user.email = account_form.email.data
+                 flash('Email updated.', 'success')
+
+            if account_form.password.data:
+                current_user.set_password(account_form.password.data)
+                flash('Password updated.', 'success')
+
+            db.session.commit()
+            return redirect(url_for('settings')) 
+
+        elif theme_form.submit_theme.data and theme_form.validate_on_submit():
+            current_user.theme = theme_form.theme.data
+            db.session.commit()
+            flash('Theme updated successfully!', 'success')
+            return redirect(url_for('settings'))
+
+        elif delete_form.submit_delete.data and delete_form.validate_on_submit():
+            user_id_to_delete = current_user.id
+            logout_user() 
+            user_to_delete = db.session.get(User, user_id_to_delete)
+            if user_to_delete:
+                # First delete all notifications associated with this user
+                Notification.query.filter_by(receiver_id=user_id_to_delete).delete()
+                # Now delete the user (books will be deleted by cascade)
+                db.session.delete(user_to_delete)
+                db.session.commit()
+                flash('Your account has been permanently deleted.', 'success')
+                return redirect(url_for('index'))
+            flash('Error deleting account.', 'danger')
+            return redirect(url_for('settings')) 
+        else:
+             if account_form.errors:
+                 for field, errors in account_form.errors.items():
+                     for error in errors:
+                         flash(f"Account Setting Error in {getattr(account_form, field).label.text}: {error}", 'danger')
+             if theme_form.errors:
+                  for field, errors in theme_form.errors.items():
+                     for error in errors:
+                         flash(f"Theme Setting Error in {getattr(theme_form, field).label.text}: {error}", 'danger')
+             if delete_form.errors:
+                  for field, errors in delete_form.errors.items():
+                     for error in errors:
+                         flash(f"Delete Account Error in {getattr(delete_form, field).label.text}: {error}", 'danger')
+
+    account_form.username.data = current_user.username
+    account_form.email.data = current_user.email
+
+    theme_form.theme.data = current_user.theme 
+
+    return render_template('settings.html', title='Settings',
+                           account_form=account_form,
+                           theme_form=theme_form,
+                           delete_form=delete_form)
+                           
 
 @application.route('/notifications')
 @login_required 
