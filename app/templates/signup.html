@@ -5,12 +5,12 @@
     <div class="col-md-6 col-lg-5">
 
         <div class="logo text-center my-4">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Bookgraph Logo">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="BookCorner Logo">
         </div>
 
         <div class="signup-container">
             <h2 class="text-center mb-2">Create Account</h2>
-            <p class="text-center text-muted mb-4">Join BookGraph today!</p>
+            <p class="text-center text-muted mb-4">Join BookCorner today!</p>
 
             <form action="{{ url_for('signup') }}" method="POST" novalidate>
                 {{ form.hidden_tag() }}
