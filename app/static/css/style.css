@@ -35,6 +35,35 @@ nav a {
     color: #FB712A;
 }
 
+/* View toggle buttons */
+.btn-outline-primary.active {
+    background-color: #FB712A;
+    border-color: #FB712A;
+    color: white;
+}
+
+.btn-outline-primary:hover:not(.active) {
+    background-color: rgba(251, 113, 42, 0.1);
+    color: #FB712A;
+}
+
+.btn-outline-primary:active:not(.active) {
+    background-color: rgba(251, 113, 42, 0.2);
+    color: #FB712A;
+}
+
+/* Dark mode adjustments for view toggle buttons */
+[data-bs-theme="dark"] .btn-outline-primary.active {
+    background-color: #FB712A;
+    border-color: #FB712A;
+    color: white;
+}
+
+[data-bs-theme="dark"] .btn-outline-primary:hover:not(.active) {
+    background-color: rgba(251, 113, 42, 0.15);
+    color: #FB712A;
+}
+
 /* Form & Signup */
 .signup-container {
     background-color: #fff;
@@ -225,3 +254,65 @@ nav a {
      }
 
 }
+
+
+/* Book Upload Page Styles */
+.search-result-cover {
+    width: 60px;
+    height: 90px;
+    object-fit: cover;
+}
+
+.no-cover {
+    width: 60px;
+    height: 90px;
+    background-color: #eee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.no-cover i {
+    font-size: 24px;
+    color: #aaa;
+}
+
+.book-cover-preview {
+    height: 280px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.book-cover-preview img {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+/* Add styles for readonly form fields to indicate they're from API */
+input[readonly].form-control {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+}
+
+/* Dark mode adjustments */
+[data-bs-theme="dark"] .search-section {
+    background-color: #2b2f34;
+    border-color: #444;
+}
+
+[data-bs-theme="dark"] .form-control[readonly] {
+    background-color: #343a40;
+    color: #adb5bd;
+}
+
+[data-bs-theme="dark"] .no-cover {
+    background-color: #343a40;
+}
+
+[data-bs-theme="dark"] .no-cover i {
+    color: #6c757d;
+}
+
