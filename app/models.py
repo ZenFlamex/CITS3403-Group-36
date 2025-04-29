@@ -16,7 +16,17 @@ class User(UserMixin,db.Model):
 
     # Relationships
     books: so.Mapped[List["Book"]] = so.relationship(back_populates="creator", cascade="all, delete-orphan")
-    notifications_received: so.Mapped[List["Notification"]] = so.relationship(back_populates="receiver")
+    notifications_received: so.Mapped[List["Notification"]] = so.relationship(
+        "Notification", 
+        foreign_keys='Notification.receiver_id',
+        back_populates="receiver",
+        cascade="all, delete-orphan" 
+    )
+    
+    shares_received_access: so.Mapped[List["BookShare"]] = so.relationship(
+        back_populates="shared_with_user",
+        cascade="all, delete-orphan" 
+    )
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -51,8 +61,13 @@ class Book(db.Model):
     end_date: so.Mapped[Optional[datetime]] = so.mapped_column(sa.DateTime, nullable=True)
     
     # Relationships
-    creator: so.Mapped[User] = so.relationship(back_populates="books")
     
+    creator: so.Mapped["User"] = so.relationship(back_populates="books")
+    shares_granted: so.Mapped[List["BookShare"]] = so.relationship(
+        back_populates="book",
+        cascade="all, delete-orphan" 
+    )
+
     def __repr__(self):
         return f'<Book {self.title} by {self.author}>'
 
@@ -71,3 +86,20 @@ class Notification(db.Model):
     
     def __repr__(self):
         return f'<Notification {self.id} for {self.receiver_id}>'
+
+
+class BookShare(db.Model):
+    __tablename__ = 'book_shares' 
+
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    book_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('book.id', ondelete='CASCADE'), index=True)
+    shared_with_user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('user.id', ondelete='CASCADE'), index=True)
+    shared_at: so.Mapped[datetime] = so.mapped_column(default=datetime.utcnow)
+    book: so.Mapped["Book"] = so.relationship(back_populates="shares_granted")
+    shared_with_user: so.Mapped["User"] = so.relationship(back_populates="shares_received_access")
+
+    # Define a unique constraint to ensure that a user can only share a book with another user once
+    __table_args__ = (sa.UniqueConstraint('book_id', 'shared_with_user_id', name='uq_book_share'),)
+
+    def __repr__(self):
+        return f'<BookShare book_id={self.book_id} user_id={self.shared_with_user_id}>'

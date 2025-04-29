@@ -1,6 +1,6 @@
 from app import application, db
-from app.models import User, Book, Notification
-from flask import flash, redirect, render_template, g, request, url_for, session
+from app.models import User, Book, Notification, BookShare
+from flask import flash, redirect, render_template, g, request, url_for, session, jsonify, abort
 from datetime import datetime
 from app.forms import LoginForm, SignupForm, AccountSettingsForm, ThemeForm, DeleteAccountForm, BookUploadForm
 from flask_login import current_user, login_user, logout_user, login_required
@@ -353,21 +353,168 @@ def notifications():
                            title="Notifications",
                            notifications=user_notifications) 
     
-@application.route('/book/<int:book_id>')
-def book_detail(book_id):
-    book = Book.query.get_or_404(book_id)
 
-    # If the book is private and the current user is not the creator
-    if not book.is_public and (not current_user.is_authenticated or book.creator_id != current_user.id):
+# --- Route to Display Book Details ---
+@application.route('/book/<int:book_id>')
+@login_required
+def book_detail(book_id):
+    book = db.session.get(Book, book_id)
+    if not book:
+        abort(404) 
+
+    is_owner = (book.creator_id == current_user.id)
+    has_shared_access = False
+    can_view = False
+
+    if is_owner:
+        can_view = True
+    else:
+        # Check if shared with current user
+        share = BookShare.query.filter_by(book_id=book.id, shared_with_user_id=current_user.id).first()
+        if share:
+            has_shared_access = True
+            can_view = True
+
+    if not can_view:
+        # If user cannot view (not owner, not shared with)
         flash("You don't have permission to view this book.", "danger")
         return redirect(url_for('my_books'))
 
-    # If the book is public, allow viewing but only the creator can edit
-    can_edit = current_user.is_authenticated and book.creator_id == current_user.id
+    shared_with_list = []
+    if is_owner:
+      
+        shares_info = db.session.query(
+                BookShare.id.label('share_id'), 
+                User.id.label('user_id'),      
+                User.username                   
+            ).\
+            join(User, BookShare.shared_with_user_id == User.id).\
+            filter(BookShare.book_id == book.id).\
+            all()
+       
+        shared_with_list = [row._asdict() for row in shares_info]
 
     return render_template(
         'book_detail.html',
         title=book.title,
         book=book,
-        can_edit=can_edit
+        is_owner=is_owner, 
+        has_shared_access=has_shared_access, 
+        shared_with_list=shared_with_list 
+        
     )
+
+# --- API Route to Search Users ---
+@application.route('/users/search')
+@login_required
+def search_users():
+    query = request.args.get('q', '', type=str).strip()
+    book_id_str = request.args.get('book_id', '') 
+
+    if not query:
+        return jsonify([])
+
+    user_query = User.query.filter(
+        User.username.ilike(f'%{query}%'),
+        User.id != current_user.id
+    )
+
+    # Try to exclude book owner and already shared users if book_id is provided
+    exclude_ids = {current_user.id}
+    if book_id_str.isdigit():
+        book_id = int(book_id_str)
+        book = db.session.get(Book, book_id)
+   
+        if book and book.creator_id == current_user.id:
+            exclude_ids.add(book.creator_id) 
+            
+            shared_user_ids = db.session.query(BookShare.shared_with_user_id).filter_by(book_id=book_id).all()
+            exclude_ids.update([uid for uid, in shared_user_ids]) 
+
+    if exclude_ids:
+        user_query = user_query.filter(User.id.notin_(exclude_ids))
+
+    users = user_query.limit(10).all()
+    results = [{'id': user.id, 'username': user.username} for user in users]
+    return jsonify(results)
+
+# --- Route to Handle Sharing Action ---
+@application.route('/book/<int:book_id>/share', methods=['POST'])
+@login_required
+def share_book(book_id):
+    book = db.session.get(Book, book_id)
+    if not book:
+        abort(404)
+
+    if book.creator_id != current_user.id:
+        abort(403)
+
+    user_id_to_share_with = request.form.get('user_id', type=int)
+    if not user_id_to_share_with:
+        flash('No user selected.', 'warning')
+        return redirect(url_for('book_detail', book_id=book_id))
+
+    user_to_share = db.session.get(User, user_id_to_share_with)
+    if not user_to_share:
+        flash('Selected user not found.', 'danger')
+        return redirect(url_for('book_detail', book_id=book_id))
+
+    if user_id_to_share_with == current_user.id:
+        flash('You cannot share a book with yourself.', 'warning')
+        return redirect(url_for('book_detail', book_id=book_id))
+
+    existing_share = BookShare.query.filter_by(book_id=book.id, shared_with_user_id=user_id_to_share_with).first()
+    if existing_share:
+        flash(f'Book already shared with {user_to_share.username}.', 'info')
+        return redirect(url_for('book_detail', book_id=book_id))
+
+    try:
+        new_share = BookShare(book_id=book.id, shared_with_user_id=user_id_to_share_with)
+        db.session.add(new_share)
+        db.session.commit()
+        flash(f'Book successfully shared with {user_to_share.username}!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error sharing book, please try again later.', 'danger')
+        application.logger.error(f"Error sharing book {book_id} to user {user_id_to_share_with}: {e}")
+
+    return redirect(url_for('book_detail', book_id=book_id))
+
+# --- Route to Handle Revoking Share Action ---
+@application.route('/book/share/<int:share_id>/revoke', methods=['POST'])
+@login_required
+def revoke_share(share_id):
+
+    share_to_revoke = db.session.get(BookShare, share_id)
+    if not share_to_revoke:
+        flash('Share record not found.', 'warning')
+        return redirect(url_for('index')) 
+
+    book = db.session.get(Book, share_to_revoke.book_id)
+    if not book:
+        flash('Associated book not found.', 'danger')
+        
+        try:
+            db.session.delete(share_to_revoke)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            application.logger.error(f"Error deleting orphaned share {share_id} after book not found: {e}")
+        return redirect(url_for('index'))
+
+    # Authorization: Only the book owner can revoke
+    if book.creator_id != current_user.id:
+        abort(403)
+
+    try:
+        user_shared_with = db.session.get(User, share_to_revoke.shared_with_user_id)
+        username = user_shared_with.username if user_shared_with else "this user" 
+        db.session.delete(share_to_revoke)
+        db.session.commit()
+        flash(f'Access revoked for {username}.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error revoking access, please try again later.', 'danger')
+        application.logger.error(f"Error revoking share {share_id}: {e}")
+
+    return redirect(url_for('book_detail', book_id=book.id))
