@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, RadioField
+from wtforms import DateField, IntegerField, SelectField, StringField, PasswordField, BooleanField, SubmitField, RadioField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Optional
 from app.models import User
 from flask_login import current_user
@@ -71,3 +71,84 @@ class DeleteAccountForm(FlaskForm):
     def validate_password(self, password):
       if not current_user.check_password(password.data):
         raise ValidationError('Incorrect password.')
+
+
+# --- Upload Book Forms ---
+class BookUploadForm(FlaskForm):
+    # Auto-fill fields (hidden when using API search)
+    openlibrary_id = StringField('OpenLibrary ID', validators=[Optional()])
+    cover_image = StringField('Cover Image URL', validators=[Optional()])
+    
+    # Visible form fields
+    title = StringField('Title', validators=[DataRequired()])
+    author = StringField('Author', validators=[DataRequired()])
+    
+    # Using SelectField for dropdown
+    genre = SelectField('Genre', choices=[
+        ('Fiction', 'Fiction'),
+        ('Non-Fiction', 'Non-Fiction'),
+        ('Science Fiction', 'Science Fiction'),
+        ('Fantasy', 'Fantasy'),
+        ('Mystery', 'Mystery'),
+        ('Romance', 'Romance'),
+        ('Thriller', 'Thriller'),
+        ('Biography', 'Biography'),
+        ('History', 'History'),
+        ('Self-Help', 'Self-Help'),
+        ('Other', 'Other')
+    ], validators=[DataRequired()])
+    
+    status = SelectField('Reading Status', choices=[
+        ('In Progress', 'In Progress'),
+        ('Completed', 'Completed'),
+        ('Dropped', 'Dropped')
+    ], validators=[DataRequired()])
+    
+    current_page = IntegerField('Current Page', validators=[Optional()])
+    total_pages = IntegerField('Total Pages', validators=[DataRequired()])
+    rating = SelectField('Rating (Stars)', choices=[
+        ('', 'Select rating'),
+        ('1', '1 - Poor'),
+        ('2', '2 - Fair'),
+        ('3', '3 - Good'),
+        ('4', '4 - Very Good'),
+        ('5', '5 - Excellent')
+    ], validators=[Optional()])
+    start_date = DateField('Date Started Reading', format='%Y-%m-%d', validators=[DataRequired()])
+    end_date = DateField('Date Finished Reading', format='%Y-%m-%d', validators=[Optional()])
+    
+    is_public = BooleanField('Make this book public')
+    is_favorite = BooleanField('Add to favorites')
+    
+    submit = SubmitField('Add Book')
+    
+    def validate(self, extra_validators=None):
+        if not super().validate(extra_validators=extra_validators):
+            return False
+        
+        # Status-specific validations
+        if self.status.data == 'Completed' and not self.end_date.data:
+            self.end_date.errors = ['End date is required for completed books']
+            return False
+        
+        if self.status.data in ['In Progress', 'Dropped'] and not self.current_page.data:
+            self.current_page.errors = ['Current page is required']
+            return False
+            
+        if self.current_page.data and self.total_pages.data and self.current_page.data > self.total_pages.data:
+            self.current_page.errors = ['Current page cannot be greater than total pages']
+            return False
+        
+        if self.start_date.data and self.end_date.data and self.end_date.data < self.start_date.data:
+            self.end_date.errors = ['End date cannot be before start date']
+            return False
+        
+        # Handle rating based on status
+        if self.status.data == 'In Progress':
+            self.rating.data = '0'  # Force rating to 0 for In Progress
+        else:
+            if not self.rating.data:
+                self.rating.errors = ['Rating is required for completed or dropped books']
+                return False
+        
+        return True

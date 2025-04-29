@@ -3,38 +3,162 @@
 {% block content %}
 <div class="container mt-5">
     <h2>Add a New Book</h2>
-    <form action="{{ url_for('upload_book') }}" method="POST">
-        <div class="form-group mb-3">
-            <label for="title">Title</label>
-            <input type="text" class="form-control" id="title" name="title" required>
+    
+    <!-- Book Search Section -->
+    <div class="card mb-4 search-section">
+        <div class="card-header">
+            <h5>Search for a Book</h5>
+            <small class="text-muted">Search OpenLibrary to quickly add a book or fill in the details manually below</small>
+        </div>
+        <div class="card-body">
+            <div class="input-group mb-3">
+                <input type="text" id="book-search" class="form-control" placeholder="Search by title, author, or ISBN...">
+                <button class="btn btn-primary" type="button" id="search-button">Search</button>
+            </div>
+            <div id="search-results" class="mt-3" style="max-height: 500px; overflow-y: auto; border-radius: 0.25rem;">
+                <!-- Search results will appear here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Form for adding book details -->
+    <form action="{{ url_for('upload_book') }}" method="POST" id="book-form" novalidate>
+        {{ form.hidden_tag() }}
+        {{ form.openlibrary_id(type="hidden") }}
+        {{ form.cover_image(type="hidden") }}
+        
+        <div class="row">
+            <!-- Left column: Form fields -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Book Details</h5>
+                        
+                        <div class="form-group mb-3">
+                            <label for="{{ form.title.id }}">{{ form.title.label.text }} <span class="text-danger required-indicator">*</span></label>
+                            {{ form.title(class="form-control") }}
+                            {% if form.title.errors %}
+                                <div class="text-danger">{{ form.title.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="{{ form.author.id }}">{{ form.author.label.text }} <span class="text-danger required-indicator">*</span></label>
+                            {{ form.author(class="form-control") }}
+                            {% if form.author.errors %}
+                                <div class="text-danger">{{ form.author.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="{{ form.genre.id }}">{{ form.genre.label.text }} <span class="text-danger required-indicator">*</span></label>
+                            {{ form.genre(class="form-control") }}
+                            {% if form.genre.errors %}
+                                <div class="text-danger">{{ form.genre.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="{{ form.status.id }}">{{ form.status.label.text }} <span class="text-danger required-indicator">*</span></label>
+                            {{ form.status(class="form-control") }}
+                            {% if form.status.errors %}
+                                <div class="text-danger">{{ form.status.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3 current-page-field">
+                                    <label for="{{ form.current_page.id }}">{{ form.current_page.label.text }} <span class="text-danger required-indicator">*</span></label>
+                                    {{ form.current_page(class="form-control", type="number", min="0") }}
+                                    {% if form.current_page.errors %}
+                                        <div class="text-danger">{{ form.current_page.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="{{ form.total_pages.id }}">{{ form.total_pages.label.text }} <span class="text-danger required-indicator">*</span></label>
+                                    {{ form.total_pages(class="form-control", type="number", min="0") }}
+                                    {% if form.total_pages.errors %}
+                                        <div class="text-danger">{{ form.total_pages.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="{{ form.start_date.id }}">{{ form.start_date.label.text }} <span class="text-danger required-indicator">*</span></label>
+                                    {{ form.start_date(class="form-control", type="date") }}
+                                    {% if form.start_date.errors %}
+                                        <div class="text-danger">{{ form.start_date.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3 end-date-field">
+                                    <label for="{{ form.end_date.id }}">{{ form.end_date.label.text }} <span class="text-danger required-indicator">*</span></label>
+                                    {{ form.end_date(class="form-control", type="date") }}
+                                    {% if form.end_date.errors %}
+                                        <div class="text-danger">{{ form.end_date.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            {{ form.is_public(class="form-check-input") }}
+                            <label class="form-check-label" for="{{ form.is_public.id }}">{{ form.is_public.label.text }}</label>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            {{ form.is_favorite(class="form-check-input") }}
+                            <label class="form-check-label" for="{{ form.is_favorite.id }}">{{ form.is_favorite.label.text }}</label>
+                        </div>
+
+                        <div class="form-group mb-3 rating-field">
+                            <label for="{{ form.rating.id }}">{{ form.rating.label.text }} <span class="text-danger required-indicator">*</span></label>
+                            {{ form.rating(class="form-control") }}
+
+                            {% if form.rating.errors %}
+                                <div class="text-danger">{{ form.rating.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right column: Book cover preview -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Book Cover</h5>
+                        <div class="book-cover-preview mb-3">
+                            <img src="{{ url_for('static', filename='images/default_cover.png') }}" id="cover-preview" class="img-fluid" alt="Book Cover">
+                        </div>
+                        <div class="text-muted">
+                            <small>Book covers are only available when searching through OpenLibrary.</small>
+                        </div>
+                        <div class="mt-3">
+                            <button type="button" id="clear-form" class="btn btn-outline-secondary">Clear Form</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         
-        <div class="form-group mb-3">
-            <label for="author">Author</label>
-            <input type="text" class="form-control" id="author" name="author" required>
+        <div class="mt-4">
+            {{ form.submit(class="btn btn-primary") }}
         </div>
-
-        <div class="form-group mb-3">
-            <label for="genre">Genre</label>
-            <input type="text" class="form-control" id="genre" name="genre">
-        </div>
-
-        <div class="form-group mb-3">
-            <label for="image_url">Book Image URL</label>
-            <input type="url" class="form-control" id="image_url" name="image_url" placeholder="https://example.com/image.jpg">
-        </div>
-
-        <div class="form-group mb-3">
-            <label for="date_started">Date Started Reading</label>
-            <input type="date" class="form-control" id="date_started" name="date_started">
-        </div>
-
-        <div class="form-check mb-3">
-            <input type="checkbox" class="form-check-input" id="private" name="private">
-            <label class="form-check-label" for="private">Keep this book private</label>
-        </div>
-
-        <button type="submit" class="btn btn-primary">Upload Book</button>
     </form>
 </div>
+{% endblock %}
+
+
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/book-upload.js') }}"></script>
 {% endblock %}

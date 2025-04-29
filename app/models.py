@@ -38,10 +38,11 @@ class Book(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     title: so.Mapped[str] = so.mapped_column(sa.String(200), index=True)
     author: so.Mapped[str] = so.mapped_column(sa.String(200), index=True)
+    genre: so.Mapped[str] = so.mapped_column(sa.String(50), default="Other")  # Add genre field
     cover_image: so.Mapped[str] = so.mapped_column(sa.String(500))
     creator_id: so.Mapped[int] = so.mapped_column(sa.Integer, sa.ForeignKey('user.id'))
     rating: so.Mapped[int] = so.mapped_column(sa.Integer, default=0)
-    status: so.Mapped[str] = so.mapped_column(sa.String(20))
+    status: so.Mapped[str] = so.mapped_column(sa.String(20), default="In Progress")
     current_page: so.Mapped[int] = so.mapped_column(sa.Integer, default=0)
     total_pages: so.Mapped[int] = so.mapped_column(sa.Integer, default=0)
     is_favorite: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False)

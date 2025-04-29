@@ -2,9 +2,10 @@ from app import application, db
 from app.models import User, Book, Notification
 from flask import flash, redirect, render_template, g, request, url_for, session
 from datetime import datetime
-from app.forms import LoginForm, SignupForm, AccountSettingsForm, ThemeForm, DeleteAccountForm
+from app.forms import LoginForm, SignupForm, AccountSettingsForm, ThemeForm, DeleteAccountForm, BookUploadForm
 from flask_login import current_user, login_user, logout_user, login_required
 from urllib.parse import urlsplit
+import requests
 
 #  Format a timestamp string into 'DD MonthName YYYY HH:MM' format.
 @application.template_filter('datetimeformat') 
@@ -164,10 +165,78 @@ def forgot_password():
 def stats():
     return render_template('stats.html', title='Statistics')
 
-@application.route('/upload_book')
+@application.route('/upload_book', methods=['GET', 'POST'])
 @login_required
 def upload_book():
-    return render_template('upload_book.html', title='Add Book')
+    form = BookUploadForm()
+    
+    if form.validate_on_submit():
+        # Handle status-specific validation and data
+        if form.status.data == 'Completed':
+            # For completed books: ensure current page equals total pages
+            if form.total_pages.data:
+                form.current_page.data = form.total_pages.data
+                
+        else:
+            # For "In Progress" or "Dropped": ignore end date regardless of what's in the field
+            form.end_date.data = None
+            
+        # Handle book cover image
+        cover_image = url_for('static', filename='images/default_cover.png', _external=True)
+        
+        # If OpenLibrary ID is provided, verify it and get the cover image (so users cannot upload malicious URLs)
+        if form.openlibrary_id.data and form.openlibrary_id.data.strip():
+            openlibrary_id = form.openlibrary_id.data.strip()
+            try:
+                # Fetch book data from OpenLibrary API
+                if openlibrary_id.startswith('ISBN:'):
+                    # Handle ISBN format
+                    isbn = openlibrary_id.split(':')[1]
+                    api_url = f"https://openlibrary.org/api/books?bibkeys=ISBN:{isbn}&format=json&jscmd=data"
+                    response = requests.get(api_url)
+                    if response.ok:
+                        data = response.json()
+                        book_data = data.get(f"ISBN:{isbn}")
+                        if book_data and book_data.get('cover') and book_data['cover'].get('medium'):
+                            cover_image = book_data['cover']['medium']
+                else:
+                    # Handle standard OpenLibrary format (/works/OL...)
+                    api_url = f"https://openlibrary.org{openlibrary_id}.json"
+                    response = requests.get(api_url)
+                    if response.ok:
+                        data = response.json()
+                        if data.get('covers') and len(data['covers']) > 0:
+                            cover_id = data['covers'][0]
+                            cover_image = f"https://covers.openlibrary.org/b/id/{cover_id}-M.jpg"
+            except Exception as e:
+                # Log the error but continue with default cover
+                print(f"Error fetching OpenLibrary data: {str(e)}")
+                # We'll use the default cover image if there's an error
+        
+        # Create new book
+        new_book = Book(
+            title=form.title.data,
+            author=form.author.data,
+            genre=form.genre.data,
+            cover_image=cover_image,
+            creator_id=current_user.id,
+            status=form.status.data,
+            current_page=form.current_page.data or 0,
+            total_pages=form.total_pages.data or 0,
+            is_favorite=form.is_favorite.data,
+            is_public=form.is_public.data,
+            rating=form.rating.data or 0,
+            start_date=form.start_date.data,
+            end_date=form.end_date.data,
+        )
+        
+        db.session.add(new_book)
+        db.session.commit()
+        
+        flash('Book added successfully!', 'success')
+        return redirect(url_for('my_books'))
+        
+    return render_template('upload_book.html', title='Add Book', form=form)
 
 @application.route('/my_books')
 @login_required
