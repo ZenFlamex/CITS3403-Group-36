@@ -14,23 +14,18 @@
 
             <h3 class="mt-2">{{ book.title }}</h3>
             <p class="text-muted">by {{ book.author }}</p>
+            <p class="text-muted">Genre: {{ book.genre }}</p>
 
-            {% if can_edit %}
+            {% if is_owner %}
             <div class="d-grid gap-2">
                 <div class="dropdown">
-                    <button class="btn btn-warning dropdown-toggle" type="button" id="changeStatusDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button class="btn btn-warning dropdown-toggle w-100 " type="button" id="changeStatusDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                         Current Status: {{ book.status }}
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="changeStatusDropdown">
-                        <li>
-                            <a class="dropdown-item {% if book.status == 'Completed' %}active{% endif %}" href="#">Mark as Completed</a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item {% if book.status == 'Dropped' %}active{% endif %}" href="#">Mark as Dropped</a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item {% if book.status == 'In Progress' %}active{% endif %}" href="#">Mark as In Progress</a>
-                        </li>
+                        <li><a class="dropdown-item {% if book.status == 'Completed' %}active{% endif %}" href="#">Mark as Completed</a></li>
+                        <li><a class="dropdown-item {% if book.status == 'Dropped' %}active{% endif %}" href="#">Mark as Dropped</a></li>
+                        <li><a class="dropdown-item {% if book.status == 'In Progress' %}active{% endif %}" href="#">Mark as In Progress</a></li>
                     </ul>
                 </div>
 
@@ -53,49 +48,98 @@
             {% endif %}
         </div>
 
-        <div class="col-md-7"> 
-            <h2>Book Details</h2>
+        <div class="col-md-7">
+            <h3>Book Details</h3>
             <p><strong>Status:</strong> {{ book.status }}</p>
-            <p><strong>Pages:</strong> {{ book.current_page }}/{{ book.total_pages }}</p>
+            <p><strong>Pages:</strong> {{ book.current_page }}/{{ book.total_pages if book.total_pages > 0 else '?' }}</p>
             <p><strong>Rating:</strong>
-                {% for i in range(book.rating) %}
-                    <i class="bi bi-star-fill text-warning"></i>
-                {% endfor %}
-                {% for i in range(5 - book.rating) %}
-                    <i class="bi bi-star text-warning"></i>
-                {% endfor %}
+                {% if book.rating and book.rating > 0 %}
+                    {% for i in range(book.rating) %}
+                        <i class="bi bi-star-fill text-warning"></i>
+                    {% endfor %}
+                    {% for i in range(5 - book.rating) %}
+                        <i class="bi bi-star text-warning"></i>
+                    {% endfor %}
+                {% else %}
+                    <span class="text-muted">Not Rated</span>
+                {% endif %}
             </p>
             <p><strong>Start Date:</strong> {{ book.start_date.strftime('%d %B %Y') if book.start_date else 'N/A' }}</p>
             <p><strong>End Date:</strong> {{ book.end_date.strftime('%d %B %Y') if book.end_date else 'N/A' }}</p>
             <p><strong>Public:</strong> {{ 'Yes' if book.is_public else 'No' }}</p>
 
-            {% if can_edit %}
-            <div class="mt-4">
-                {% if book.status == 'Dropped' %}
-                    <div class="alert alert-secondary">
-                        This book is marked as dropped. Change the status to add more notes.
-                    </div>
-                {% else %}
-                    <h3>Add Reading Progress</h3>
+            {% if not is_owner and has_shared_access %}
+                 <p class="alert alert-info mt-3"><em>This book has been shared with you by the owner.</em></p>
+            {% endif %}
 
-                    <div class="form-group mb-3">
-                        <label for="pagesRead" class="form-label">Pages Read</label>
-                        <input type="number" id="pagesRead" name="pagesRead" class="form-control" placeholder="Enter the number of pages read" min="0">
+            {% if is_owner %}
+                <hr class="my-4">
+                <div class="mb-5">
+                    {% if book.status == 'Dropped' %}
+                        <div class="alert alert-secondary">
+                            This book is marked as dropped. Change the status to add more notes or progress.
+                        </div>
+                    {% else %}
+                        <h3>Add Reading Progress</h3>
+                        <div class="mb-3">
+                            <label for="pagesRead" class="form-label">Current Page</label>
+                            <input type="number" id="pagesRead" name="pagesRead" class="form-control" placeholder="Enter current page number" min="0" max="{{ book.total_pages if book.total_pages > 0 else '' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="readingNotes" class="form-label">Notes</label>
+                            <textarea id="readingNotes" class="form-control" rows="4" placeholder="Write your notes here..."></textarea>
+                        </div>
+                        <button class="btn btn-success">Save Progress</button>
+                    {% endif %}
+                </div>
+
+                <hr class="my-4">
+                <h3>Share this Book</h3>
+
+                <form id="share-form" method="POST" action="{{ url_for('share_book', book_id=book.id) }}" class="mb-3">
+                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="mb-3">
+                        <label for="user-search-input" class="form-label">Share with user:</label>
+                        <div style="position: relative;">
+                            <input type="text" id="user-search-input" class="form-control" placeholder="Type username to search..." autocomplete="off" data-book-id="{{ book.id }}">
+                            <div id="user-search-results" class="list-group mt-1" style="max-height: 200px; overflow-y: auto; position: absolute; z-index: 1000; width: 100%; display: none; border: 1px solid #ced4da; background-color: white;">
+                                </div>
+                        </div>
+                        <input type="hidden" name="user_id" id="selected-user-id">
+                        <div id="selected-user-info" class="form-text text-muted mt-2">No user selected.</div>
                     </div>
-                    <div class="form-group">
-                        <label for="readingNotes" class="form-label">Notes</label>
-                        <textarea id="readingNotes" class="form-control" rows="4" placeholder="Write your notes here..."></textarea>
-                    </div>
-                    <button class="btn btn-success mt-3">Save Progress</button>
+                    <button type="submit" id="share-submit-btn" class="btn btn-success" disabled>Share</button>
+                </form>
+
+                <h4 class="mt-4">Currently Shared With</h4>
+                {% if shared_with_list %}
+                    <ul class="list-group mb-4">
+                        {% for share_info in shared_with_list %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>{{ share_info.username }} </span>
+                                <form method="POST" action="{{ url_for('revoke_share', share_id=share_info.share_id) }}" style="display: inline;">
+                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to revoke access for {{ share_info.username }}?');">Revoke</button>
+                                </form>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>This book is not currently shared with anyone.</p>
                 {% endif %}
-            </div>
+
             {% endif %}
 
             <div class="mt-5">
-                <h3>Reading History</h3>
+                <h4>Reading History</h4>
                 <p class="text-muted">No reading history available yet.</p>
             </div>
+
         </div>
     </div>
 </div>
+
+<script src="{{ url_for('static', filename='js/book_detail_sharing.js') }}" defer></script>
+
 {% endblock %}
