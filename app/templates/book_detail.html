@@ -208,85 +208,99 @@
 <script src="{{ url_for('static', filename='js/book_detail_sharing.js') }}" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Data passed from the backend
-    const readingProgressData = {{ reading_progress_data | tojson }};
-    const labels = readingProgressData.map((_, index) => `Progress #${index + 1}`);
-    const pagesReadData = readingProgressData.map(progress => progress.pages_read);
+    
+    const readingProgressData = {{ reading_progress_data | tojson }}; 
 
-    // Calculate cumulative total pages read
-    const cumulativeData = [];
-    let cumulativeTotal = 0;
-    pagesReadData.forEach(pages => {
-        cumulativeTotal += pages;
-        cumulativeData.push(cumulativeTotal);
-    });
+    if (readingProgressData && readingProgressData.length > 0) {
+        const labels = readingProgressData.map((_, index) => `Entry #${index + 1}`); 
+        const pagesReadData = readingProgressData.map(progress => progress.pages_read);
 
-    // Bar Chart Configuration
-    const barCtx = document.getElementById('readingProgressChart').getContext('2d');
-    new Chart(barCtx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Pages Read',
-                data: pagesReadData,
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Reading Progress #'
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Pages Read'
-                    }
+        // Calculate cumulative total pages read
+        const cumulativeData = [];
+        let cumulativeTotal = 0;
+        pagesReadData.forEach(pages => {
+            cumulativeTotal += pages;
+            cumulativeData.push(cumulativeTotal);
+        });
+
+        const barCanvasElement = document.getElementById('readingProgressChart');
+        if (barCanvasElement) {
+            try {
+                const barCtx = barCanvasElement.getContext('2d');
+                if (barCtx) {
+                    console.log("Initializing Bar Chart (Pages Read Per Entry)."); 
+                    new Chart(barCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Pages Read Per Entry',
+                                data: pagesReadData,
+                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                             scales: {
+                                 x: { title: { display: true, text: 'Reading Entry #' } },
+                                 y: { beginAtZero: true, title: { display: true, text: 'Pages Read' } }
+                             }
+                         }
+                    });
+                } else {
+                     console.error("Failed to get 2D context for readingProgressChart.");
                 }
+            } catch(e) {
+                 console.error("Error initializing Bar Chart:", e);
             }
+        } else {
+             // console.warn("Canvas element 'readingProgressChart' not found on this page.");
         }
-    });
 
-    // Line Graph Configuration
-    const lineCtx = document.getElementById('cumulativeProgressChart').getContext('2d');
-    new Chart(lineCtx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Cumulative Pages Read',
-                data: cumulativeData,
-                backgroundColor: 'rgba(153, 102, 255, 0.2)',
-                borderColor: 'rgba(153, 102, 255, 1)',
-                borderWidth: 2,
-                fill: true
-            }]
-        },
-        options: {
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Reading Progress #'
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Total Pages Read'
-                    }
+        // Line Chart for Cumulative Pages Read
+        const lineCanvasElement = document.getElementById('cumulativeProgressChart');
+        if (lineCanvasElement) {
+             try {
+                const lineCtx = lineCanvasElement.getContext('2d');
+                
+                if (lineCtx) {
+                    console.log("Initializing Line Chart (Cumulative Pages Read)."); 
+                    new Chart(lineCtx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Cumulative Pages Read',
+                                data: cumulativeData,
+                                backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                                borderColor: 'rgba(153, 102, 255, 1)',
+                                borderWidth: 2,
+                                fill: true,
+                                tension: 0.1 
+                            }]
+                        },
+                         options: { 
+                             scales: {
+                                 x: { title: { display: true, text: 'Reading Entry #' } },
+                                 y: { beginAtZero: true, title: { display: true, text: 'Total Pages Read' } }
+                             }
+                         }
+                    });
+                } else {
+                    console.error("Failed to get 2D context for cumulativeProgressChart.");
                 }
-            }
+             } catch(e) {
+                 console.error("Error initializing Line Chart:", e);
+             }
+        } else {
+             // console.warn("Canvas element 'cumulativeProgressChart' not found on this page.");
         }
-    });
+
+    } else {
+        console.log("No reading progress data found. Skipping chart initialization.");
+     
+    }
 </script>
 
-{% endblock %}
+{% endblock %} 

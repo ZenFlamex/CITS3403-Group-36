@@ -5,7 +5,9 @@ from datetime import datetime
 from app.forms import LoginForm, SignupForm, AccountSettingsForm, ThemeForm, DeleteAccountForm, BookUploadForm
 from flask_login import current_user, login_user, logout_user, login_required
 from urllib.parse import urlsplit
+from sqlalchemy import func
 import requests
+
 
 #  Format a timestamp string into 'DD MonthName YYYY HH:MM' format.
 @application.template_filter('datetimeformat') 
@@ -210,7 +212,7 @@ def upload_book():
                             cover_image = f"https://covers.openlibrary.org/b/id/{cover_id}-M.jpg"
             except Exception as e:
                 # Log the error but continue with default cover
-                print(f"Error fetching OpenLibrary data: {str(e)}")
+                application.logger.warning(f"Error fetching OpenLibrary data for '{openlibrary_id}': {str(e)}")
                 # We'll use the default cover image if there's an error
         
         # Create new book
@@ -230,12 +232,24 @@ def upload_book():
             end_date=form.end_date.data,
         )
         
-        db.session.add(new_book)
-        db.session.commit()
-        
-        flash('Book added successfully!', 'success')
-        return redirect(url_for('my_books'))
-        
+        try:
+            db.session.add(new_book)
+            db.session.commit() 
+            flash('Book added successfully!', 'success')
+
+            try:
+                application.logger.debug(f"Calling milestone check for user {current_user.id} after adding book.")
+                check_and_create_milestone_notifications(current_user)
+            except Exception as milestone_e:
+                application.logger.error(f"Error during milestone check after adding book for user {current_user.id}: {milestone_e}", exc_info=True)
+
+            return redirect(url_for('my_books')) 
+
+        except Exception as e:
+            db.session.rollback() 
+            flash(f"Error adding book: {str(e)}", "danger")
+            application.logger.error(f"Error adding book for user {current_user.id}: {e}", exc_info=True)
+   
     return render_template('upload_book.html', title='Add Book', form=form)
 
 @application.route('/my_books')
@@ -354,7 +368,7 @@ def notifications():
                            notifications=user_notifications) 
     
 
-# --- Route to Display Book Details --
+# --- Route to Display Book Details ---
 @application.route('/book/<int:book_id>')
 def book_detail(book_id):
     book = Book.query.get_or_404(book_id)
@@ -492,6 +506,24 @@ def share_book(book_id):
         new_share = BookShare(book_id=book.id, shared_with_user_id=user_id_to_share_with)
         db.session.add(new_share)
         db.session.commit()
+
+        try:
+            notification_text = f"shared the book '{book.title}' with you."
+            notification_link = url_for('book_detail', book_id=book.id, _external=True) 
+
+            new_notification = Notification(
+                receiver_id=user_to_share.id,
+                sender_name=current_user.username, 
+                type='share', 
+                text=notification_text,
+                link=notification_link
+            )
+            db.session.add(new_notification)
+            db.session.commit()
+        except Exception as notify_error:
+            db.session.rollback() 
+            application.logger.error(f"Error creating notification for share (book {book_id} to user {user_id_to_share_with}): {notify_error}") 
+
         flash(f'Book successfully shared with {user_to_share.username}!', 'success')
     except Exception as e:
         db.session.rollback()
@@ -539,30 +571,32 @@ def revoke_share(share_id):
 
     return redirect(url_for('book_detail', book_id=book.id))
 
+
 @application.route('/book/<int:book_id>/add_progress', methods=['POST'])
+@login_required 
 def add_reading_progress(book_id):
     book = Book.query.get_or_404(book_id)
-
-    # Ensure only the owner can add progress
     if book.creator_id != current_user.id:
         flash("You don't have permission to update this book.", "danger")
         return redirect(url_for('book_detail', book_id=book.id))
 
-    # Get form data
     pages_read = request.form.get('pagesRead', type=int)
     notes = request.form.get('readingNotes', type=str)
 
-    if pages_read is None or pages_read < 0:
-        flash("Invalid page number.", "danger")
-        return redirect(url_for('book_detail', book_id=book.id))
-
-    total_pages_read = sum(progress.pages_read for progress in book.reading_progress)
-
-    # Ensure the new pages_read does not exceed the remaining pages
+    total_pages_read = sum(p.pages_read for p in book.reading_progress)
     if book.total_pages > 0 and (total_pages_read + pages_read) > book.total_pages:
-        remaining_pages = book.total_pages - total_pages_read
-        flash(f"You can only add up to {remaining_pages} more pages.", "danger")
-        return redirect(url_for('book_detail', book_id=book.id))
+         remaining_pages = book.total_pages - total_pages_read
+         flash(f"You can only add up to {remaining_pages} more pages.", "danger")
+         return redirect(url_for('book_detail', book_id=book.id))
+
+    new_total_pages_read_after_add = total_pages_read + pages_read
+    book_status_changed = False
+    if book.status != 'Completed' and book.total_pages > 0 and new_total_pages_read_after_add >= book.total_pages:
+        book.status = 'Completed'
+        book.current_page = book.total_pages 
+        if not book.end_date: 
+             book.end_date = datetime.utcnow()
+        book_status_changed = True
 
     progress = ReadingProgress(
         book_id=book.id,
@@ -570,10 +604,23 @@ def add_reading_progress(book_id):
         pages_read=pages_read,
         notes=notes
     )
-    db.session.add(progress)
-    db.session.commit()
 
-    flash("Reading progress added successfully!", "success")
+    try:
+        db.session.add(progress)
+        if book_status_changed:
+            db.session.add(book) 
+
+        db.session.commit() 
+        flash("Reading progress added successfully!", "success")
+
+        check_and_create_milestone_notifications(current_user)
+
+    except Exception as e:
+        db.session.rollback()
+        flash("Error saving reading progress.", "danger")
+        application.logger.error(f"Error adding reading progress for book {book_id} by user {current_user.id}: {e}", exc_info=True)
+
+
     return redirect(url_for('book_detail', book_id=book.id))
 
 @application.route('/book/<int:book_id>/delete_progress/<int:progress_id>', methods=['POST'])
@@ -581,7 +628,6 @@ def delete_reading_progress(book_id, progress_id):
     book = Book.query.get_or_404(book_id)
     progress = ReadingProgress.query.get_or_404(progress_id)
 
-    # Ensure only the owner can delete progress
     if book.creator_id != current_user.id:
         flash("You don't have permission to delete this progress entry.", "danger")
         return redirect(url_for('book_detail', book_id=book.id))
@@ -591,3 +637,147 @@ def delete_reading_progress(book_id, progress_id):
 
     flash("Reading progress entry deleted successfully!", "success")
     return redirect(url_for('book_detail', book_id=book.id))
+
+
+# --- API Route to Mark Notification as Read ---
+@application.route('/notifications/<int:notification_id>/read', methods=['POST'])
+@login_required
+def mark_notification_read(notification_id):
+    notification = db.session.get(Notification, notification_id)
+
+    # Check if notification exists
+    if not notification:
+        return jsonify({'success': False, 'message': 'Notification not found.'}), 404
+
+    # Check if the notification belongs to the current user
+    if notification.receiver_id != current_user.id:
+        return jsonify({'success': False, 'message': 'Forbidden.'}), 403
+
+    # Mark as read if it's not already
+    if not notification.is_read:
+        try:
+            notification.is_read = True
+            db.session.commit()
+
+            return jsonify({'success': True}), 200
+        except Exception as e:
+            db.session.rollback()
+            application.logger.error(f"Error marking notification {notification_id} as read: {e}")
+            return jsonify({'success': False, 'message': 'Database error.'}), 500
+    else:
+        return jsonify({'success': True}), 200
+
+def check_and_create_milestone_notifications(user):
+    if not user or not isinstance(user, User):
+        application.logger.warning("Invalid user passed to milestone check.")
+        return
+
+    application.logger.debug(f"Checking milestones for user {user.id} ({user.username})")
+
+    milestones = {
+        'first_book_added': {
+            'condition': lambda u: Book.query.filter_by(creator_id=u.id).count() >= 1,
+            'text': 'Bookshelf initiated! You successfully added your first book.',
+            'link': lambda: url_for('my_books', _external=True)
+        },
+        'first_book_completed': {
+            'condition': lambda u: Book.query.filter_by(creator_id=u.id, status='Completed').count() >= 1,
+            'text': 'First victory! Congratulations on completing your first book!',
+            'link': lambda: url_for('my_books', _external=True)
+        },
+
+        'completed_5_books': { 
+            'condition': lambda u: Book.query.filter_by(creator_id=u.id, status='Completed').count() >= 5,
+            'text': 'Reading enthusiast! You have completed 5 books!',
+            'link': lambda: url_for('my_books', _external=True)
+        },
+        'completed_10_books': { 
+            'condition': lambda u: Book.query.filter_by(creator_id=u.id, status='Completed').count() >= 10,
+            'text': 'Perfect ten! 10 books completed, keep it up!',
+            'link': lambda: url_for('my_books', _external=True)
+        },
+        'completed_25_books': { 
+            'condition': lambda u: Book.query.filter_by(creator_id=u.id, status='Completed').count() >= 25,
+            'text': 'Reading expert! 25 books completed, awesome!',
+            'link': lambda: url_for('my_books', _external=True)
+        },
+        'completed_50_books': {
+            'condition': lambda u: Book.query.filter_by(creator_id=u.id, status='Completed').count() >= 50,
+            'text': 'Reading master! 50 books completed, impressive!',
+            'link': lambda: url_for('my_books', _external=True)
+        },
+
+        'read_100_pages': { 
+            'condition': lambda u: (db.session.query(func.sum(ReadingProgress.pages_read))
+                                    .filter(ReadingProgress.user_id == u.id).scalar() or 0) >= 100,
+            'text': 'A journey of a thousand pages begins with a single step! You\'ve read over 100 pages!',
+            'link': lambda: url_for('stats', _external=True)
+        },
+        'read_1000_pages': { 
+            'condition': lambda u: (db.session.query(func.sum(ReadingProgress.pages_read))
+                                    .filter(ReadingProgress.user_id == u.id).scalar() or 0) >= 1000,
+            'text': 'Breaking a thousand! You\'ve read over 1000 pages!',
+            'link': lambda: url_for('stats', _external=True)
+        },
+        'read_5000_pages': {
+            'condition': lambda u: (db.session.query(func.sum(ReadingProgress.pages_read))
+                                    .filter(ReadingProgress.user_id == u.id).scalar() or 0) >= 5000,
+            'text': 'Page conqueror! Your reading volume has exceeded 5000 pages!',
+            'link': lambda: url_for('stats', _external=True)
+        },
+        'read_10000_pages': { 
+            'condition': lambda u: (db.session.query(func.sum(ReadingProgress.pages_read))
+                                    .filter(ReadingProgress.user_id == u.id).scalar() or 0) >= 10000,
+            'text': 'Breaking ten thousand! Your reading volume has exceeded 10,000 pages!',
+            'link': lambda: url_for('stats', _external=True)
+        },
+
+         'diverse_reader_3_genres': { 
+             'condition': lambda u: db.session.query(func.count(distinct(Book.genre))).filter(Book.creator_id == u.id).scalar() >= 3,
+             'text': 'Broad Tastes! You have added books from at least 3 different genres.',
+             'link': lambda: url_for('my_books', _external=True)
+    
+         },
+
+        'shared_first_book': {
+            'condition': lambda u: db.session.query(BookShare.id).join(Book, BookShare.book_id == Book.id).filter(Book.creator_id == u.id).count() >= 1,
+            'text': 'Sharing is caring! You shared your first book.',
+            'link': lambda: url_for('my_books', _external=True)
+        },
+         'received_first_share': {
+             'condition': lambda u: BookShare.query.filter_by(shared_with_user_id=u.id).count() >= 1,
+             'text': 'A book gift! A friend shared a book with you.',
+             'link': lambda: url_for('index', _external=True) 
+       
+         },
+    }
+
+    for key, config in milestones.items():
+        try:
+            if config['condition'](user):
+                application.logger.debug(f"User {user.id} meets condition for milestone '{key}'")
+        
+                existing_notification = Notification.query.filter_by(
+                    receiver_id=user.id,
+                    type=key 
+                ).first()
+
+                if not existing_notification:
+                    application.logger.info(f"Milestone '{key}' reached by user {user.id} and not yet notified. Creating notification.")
+                    notification = Notification(
+                        receiver_id=user.id,
+                        sender_name='System',
+                        type=key,
+                        text=config['text'],
+                        link=config['link']() 
+                    )
+                    db.session.add(notification)
+                    db.session.commit() 
+                    application.logger.info(f"Milestone notification '{key}' successfully created for user {user.id}")
+
+                else:
+                     application.logger.debug(f"User {user.id} already notified for milestone '{key}'. Skipping.")
+
+        except Exception as e:
+            db.session.rollback()
+            application.logger.error(f"Error processing milestone '{key}' for user {user.id}: {e}", exc_info=True)
