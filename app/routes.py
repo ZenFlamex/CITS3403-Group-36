@@ -1,5 +1,5 @@
 from app import application, db
-from app.models import User, Book, Notification, BookShare
+from app.models import User, Book, Notification, BookShare, ReadingProgress
 from flask import flash, redirect, render_template, g, request, url_for, session, jsonify, abort
 from datetime import datetime
 from app.forms import LoginForm, SignupForm, AccountSettingsForm, ThemeForm, DeleteAccountForm, BookUploadForm
@@ -358,9 +358,17 @@ def notifications():
 @application.route('/book/<int:book_id>')
 @login_required
 def book_detail(book_id):
-    book = db.session.get(Book, book_id)
-    if not book:
-        abort(404) 
+    book = Book.query.get_or_404(book_id)
+
+    # Prepare reading progress data for the charts
+    reading_progress_data = [
+        {"pages_read": progress.pages_read}
+        for progress in book.reading_progress
+    ]
+     # Calculate the average number of pages read
+    total_pages_read = sum(progress.pages_read for progress in book.reading_progress)
+    total_entries = len(book.reading_progress)
+    average_pages_read = total_pages_read / total_entries if total_entries > 0 else 0
 
     is_owner = (book.creator_id == current_user.id)
     has_shared_access = False
@@ -400,8 +408,8 @@ def book_detail(book_id):
         book=book,
         is_owner=is_owner, 
         has_shared_access=has_shared_access, 
-        shared_with_list=shared_with_list 
-        
+        shared_with_list=shared_with_list,
+        reading_progress_data=reading_progress_data        
     )
 
 # --- API Route to Search Users ---
@@ -517,4 +525,57 @@ def revoke_share(share_id):
         flash(f'Error revoking access, please try again later.', 'danger')
         application.logger.error(f"Error revoking share {share_id}: {e}")
 
+    return redirect(url_for('book_detail', book_id=book.id))
+
+@application.route('/book/<int:book_id>/add_progress', methods=['POST'])
+def add_reading_progress(book_id):
+    book = Book.query.get_or_404(book_id)
+
+    # Ensure only the owner can add progress
+    if book.creator_id != current_user.id:
+        flash("You don't have permission to update this book.", "danger")
+        return redirect(url_for('book_detail', book_id=book.id))
+
+    # Get form data
+    pages_read = request.form.get('pagesRead', type=int)
+    notes = request.form.get('readingNotes', type=str)
+
+    if pages_read is None or pages_read < 0:
+        flash("Invalid page number.", "danger")
+        return redirect(url_for('book_detail', book_id=book.id))
+
+    total_pages_read = sum(progress.pages_read for progress in book.reading_progress)
+
+    # Ensure the new pages_read does not exceed the remaining pages
+    if book.total_pages > 0 and (total_pages_read + pages_read) > book.total_pages:
+        remaining_pages = book.total_pages - total_pages_read
+        flash(f"You can only add up to {remaining_pages} more pages.", "danger")
+        return redirect(url_for('book_detail', book_id=book.id))
+
+    progress = ReadingProgress(
+        book_id=book.id,
+        user_id=current_user.id,
+        pages_read=pages_read,
+        notes=notes
+    )
+    db.session.add(progress)
+    db.session.commit()
+
+    flash("Reading progress added successfully!", "success")
+    return redirect(url_for('book_detail', book_id=book.id))
+
+@application.route('/book/<int:book_id>/delete_progress/<int:progress_id>', methods=['POST'])
+def delete_reading_progress(book_id, progress_id):
+    book = Book.query.get_or_404(book_id)
+    progress = ReadingProgress.query.get_or_404(progress_id)
+
+    # Ensure only the owner can delete progress
+    if book.creator_id != current_user.id:
+        flash("You don't have permission to delete this progress entry.", "danger")
+        return redirect(url_for('book_detail', book_id=book.id))
+
+    db.session.delete(progress)
+    db.session.commit()
+
+    flash("Reading progress entry deleted successfully!", "success")
     return redirect(url_for('book_detail', book_id=book.id))

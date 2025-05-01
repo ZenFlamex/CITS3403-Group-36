@@ -27,6 +27,10 @@ class User(UserMixin,db.Model):
         back_populates="shared_with_user",
         cascade="all, delete-orphan" 
     )
+    reading_progress: so.Mapped[List["ReadingProgress"]] = so.relationship(
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -67,6 +71,10 @@ class Book(db.Model):
         back_populates="book",
         cascade="all, delete-orphan" 
     )
+    reading_progress: so.Mapped[List["ReadingProgress"]] = so.relationship(
+        back_populates="book",
+        cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f'<Book {self.title} by {self.author}>'
@@ -103,3 +111,20 @@ class BookShare(db.Model):
 
     def __repr__(self):
         return f'<BookShare book_id={self.book_id} user_id={self.shared_with_user_id}>'
+    
+
+class ReadingProgress(db.Model):
+    __tablename__ = 'reading_progress'
+
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    book_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('book.id', ondelete='CASCADE'), nullable=False)
+    user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    pages_read: so.Mapped[int] = so.mapped_column(nullable=False)
+    notes: so.Mapped[Optional[str]] = so.mapped_column(sa.Text, nullable=True)
+
+    # Relationships
+    book: so.Mapped["Book"] = so.relationship(back_populates="reading_progress")
+    user: so.Mapped["User"] = so.relationship(back_populates="reading_progress")
+
+    def __repr__(self):
+        return f'<ReadingProgress book_id={self.book_id} user_id={self.user_id} pages_read={self.pages_read}>'
