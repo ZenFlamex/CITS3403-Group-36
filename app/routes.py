@@ -354,62 +354,74 @@ def notifications():
                            notifications=user_notifications) 
     
 
-# --- Route to Display Book Details ---
+# --- Route to Display Book Details --
 @application.route('/book/<int:book_id>')
-@login_required
 def book_detail(book_id):
     book = Book.query.get_or_404(book_id)
 
-    # Prepare reading progress data for the charts
-    reading_progress_data = [
-        {"pages_read": progress.pages_read}
-        for progress in book.reading_progress
-    ]
-     # Calculate the average number of pages read
-    total_pages_read = sum(progress.pages_read for progress in book.reading_progress)
-    total_entries = len(book.reading_progress)
-    average_pages_read = total_pages_read / total_entries if total_entries > 0 else 0
+    is_owner = False 
+    has_shared_access = False 
+    can_view = False 
+    shared_with_list = [] 
+    reading_progress_data = [] 
 
-    is_owner = (book.creator_id == current_user.id)
-    has_shared_access = False
-    can_view = False
-
-    if is_owner:
+    if book.is_public:
         can_view = True
-    else:
-        # Check if shared with current user
-        share = BookShare.query.filter_by(book_id=book.id, shared_with_user_id=current_user.id).first()
-        if share:
-            has_shared_access = True
+        if current_user.is_authenticated: 
+            is_owner = (book.creator_id == current_user.id)
+    elif current_user.is_authenticated:
+        is_owner = (book.creator_id == current_user.id)
+        if is_owner:
             can_view = True
+        else:
+            share = BookShare.query.filter_by(book_id=book.id, shared_with_user_id=current_user.id).first()
+            if share:
+                has_shared_access = True
+                can_view = True
 
     if not can_view:
-        # If user cannot view (not owner, not shared with)
-        flash("You don't have permission to view this book.", "danger")
-        return redirect(url_for('my_books'))
+        flash("You don't have permission to view this private book.", "danger")
+    
+        if current_user.is_authenticated:
+             return redirect(url_for('my_books'))
+        else:
+             return redirect(url_for('login', next=request.url))
 
-    shared_with_list = []
+    try:
+        if hasattr(book, 'reading_progress') and book.reading_progress: 
+             reading_progress_data = [
+                 {"pages_read": progress.pages_read}
+                 for progress in book.reading_progress
+             ]
+           
+             total_pages_read = sum(item['pages_read'] for item in reading_progress_data) 
+             total_entries = len(reading_progress_data)
+             average_pages_read = total_pages_read / total_entries if total_entries > 0 else 0
+        else:
+             reading_progress_data = []
+    except Exception as e:
+        application.logger.error(f"Error calculating reading progress for book {book_id}: {e}")
+        reading_progress_data = [] 
+
     if is_owner:
-      
         shares_info = db.session.query(
-                BookShare.id.label('share_id'), 
-                User.id.label('user_id'),      
-                User.username                   
+                BookShare.id.label('share_id'),
+                User.id.label('user_id'),
+                User.username
             ).\
             join(User, BookShare.shared_with_user_id == User.id).\
             filter(BookShare.book_id == book.id).\
             all()
-       
         shared_with_list = [row._asdict() for row in shares_info]
 
     return render_template(
         'book_detail.html',
         title=book.title,
         book=book,
-        is_owner=is_owner, 
-        has_shared_access=has_shared_access, 
+        is_owner=is_owner,
+        has_shared_access=has_shared_access,
         shared_with_list=shared_with_list,
-        reading_progress_data=reading_progress_data        
+        reading_progress_data=reading_progress_data 
     )
 
 # --- API Route to Search Users ---
