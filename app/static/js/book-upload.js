@@ -531,4 +531,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     
     updateFormVisibility();
+
+    if (openlibraryIdInput?.value && titleInput?.value && authorInput?.value) {
+        const restoredBookInfo = {
+            key: openlibraryIdInput.value,
+            title: titleInput.value,
+            authors: authorInput.value,
+            pages: totalPagesInput?.value || '',
+            cover: coverImageInput?.value || ''
+        };
+
+        populateFormFromBook(restoredBookInfo);
+    }
+
 });
