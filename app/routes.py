@@ -22,27 +22,26 @@ def format_datetime_custom(value, format="%d %B %Y %H:%M"):
 
 @application.context_processor
 def inject_notifications():
-    recent_notifications = []
+    unread_notifications_for_dropdown = [] 
     unread_count = 0
     username = None
     
-    # Check if the user is logged in using Flask-Login's current_user
     if current_user.is_authenticated:
         username = current_user.username
         
-        user_notifications = Notification.query.filter_by(
-            receiver_id=current_user.id 
+        unread_notifications_for_dropdown = Notification.query.filter_by(
+            receiver_id=current_user.id,
+            is_read=False  
         ).order_by(Notification.timestamp.desc()).limit(5).all() 
 
         unread_count = Notification.query.filter_by(
             receiver_id=current_user.id,
             is_read=False
         ).count()
-        recent_notifications = user_notifications 
 
     return {
-        'recent_notifications': recent_notifications,
-        'unread_count': unread_count,
+        'unread_notifications_for_dropdown': unread_notifications_for_dropdown, 
+        'unread_count': unread_count, 
         'username': username
     }
 
