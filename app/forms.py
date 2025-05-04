@@ -75,6 +75,7 @@ class DeleteAccountForm(FlaskForm):
 
 # --- Upload Book Forms ---
 class BookUploadForm(FlaskForm):
+    submission_token = StringField('Submission Token', validators=[Optional()])
     # Auto-fill fields (hidden when using API search)
     openlibrary_id = StringField('OpenLibrary ID', validators=[Optional()])
     cover_image = StringField('Cover Image URL', validators=[Optional()])
@@ -125,6 +126,13 @@ class BookUploadForm(FlaskForm):
     def validate(self, extra_validators=None):
         if not super().validate(extra_validators=extra_validators):
             return False
+        
+        # Check if current page equals total pages but status is "In Progress"
+        if (self.status.data == 'In Progress' and self.current_page.data and self.total_pages.data and self.current_page.data == self.total_pages.data):
+            self.status.data = 'Completed'
+            if not self.rating.data or self.rating.data == '':
+                self.rating.errors = ['Status has been changed to "Completed" because current page equals total pages. Please provide a rating.']
+                return False
         
         # Status-specific validations
         if self.status.data == 'Completed' and not self.end_date.data:

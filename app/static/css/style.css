@@ -316,3 +316,26 @@ input[readonly].form-control {
     color: #6c757d;
 }
 
+/* Submit button styles */
+input[type="submit"], .btn-primary[type="submit"] {
+    background-color: #FB712A;
+    border-color: #FB712A;
+    color: white;
+
+}
+
+
+input[type="submit"]:hover, .btn-primary[type="submit"]:hover {
+    background-color: #E1601F;
+    border-color: #D1571A;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+input[type="submit"]:active, .btn-primary[type="submit"]:active {
+    background-color: white !important;
+    color: #FB712A !important;
+    border: 2px solid #FB712A !important;
+    transform: scale(0.98);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
