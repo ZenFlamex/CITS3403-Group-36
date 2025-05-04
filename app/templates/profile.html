@@ -3,44 +3,41 @@
 {% block content %}
 <h2>My Profile</h2>
 
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="alert-container">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} mt-2">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
 <div class="row" style="align-items: center;">
-    <div class="col-md-6 text-center">
-        <div style="width: 300px; height: 300px; background-color: #ccc; border-radius: 50%; margin: 0 auto;">
-            <div style="position: relative; width: 100%; height: 100%;">
-                <img src="{{ url_for('static', filename='images/default_pfp.png') }}" alt="Profile Picture" class="img-fluid rounded-circle profile-picture" style="width: 100%; height: 100%; object-fit: cover; transform: scale(1.05);">
-                <input type="file" id="profilePictureInput" style="display: none;" accept="image/*">
-            </div>
+    <div class="col-md-4 text-center">
+        <div class="profile-picture-container" style="width: 300px; height: 300px; background-color: #ccc; border-radius: 50%; margin: 0 auto; position: relative; cursor: pointer;" id="profilePictureContainer">
+            
+            {% set profile_picture = current_user.profile_picture if current_user.profile_picture and current_user.profile_picture != 'default_pfp.png' else 'default_pfp.png' %}
+            <img src="{{ url_for('static', filename='images/profile_pictures/' + profile_picture) }}" 
+                 alt="Profile Picture" 
+                 class="img-fluid rounded-circle profile-picture" 
+                 style="
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    object-position: center;
+                    display: block;
+                    margin: auto;
+                 " 
+                 id="profilePreview">
 
-            <script>
-                document.addEventListener('DOMContentLoaded', function () {
-                    const profilePicture = document.querySelector('.profile-picture');
-                    const fileInput = document.getElementById('profilePictureInput');
-
-                    // Add hover effect
-                    profilePicture.addEventListener('mouseover', function () {
-                        profilePicture.style.filter = 'brightness(0.8)';
-                    });
-
-                    profilePicture.addEventListener('mouseout', function () {
-                        profilePicture.style.filter = 'none';
-                    });
-
-                    // Add click event to upload a new profile picture
-                    profilePicture.addEventListener('click', function () {
-                        fileInput.click();
-                    });
-
-                    fileInput.addEventListener('change', function () {
-                        if (fileInput.files && fileInput.files[0]) {
-                            const reader = new FileReader();
-                            reader.onload = function (e) {
-                                profilePicture.src = e.target.result;
-                            };
-                            reader.readAsDataURL(fileInput.files[0]);
-                        }
-                    });
-                });
-            </script>
+            <form action="{{ url_for('upload_profile_picture') }}" method="POST" enctype="multipart/form-data" id="profileForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="file" id="profilePictureInput" name="file" accept="image/*" style="display: none;">
+                <div class="profile-overlay">+</div>
+            </form>
         </div>
         <p style="font-size: 1.2rem; font-weight: bold; margin-top: 10px;">Profile Picture</p>
     </div>

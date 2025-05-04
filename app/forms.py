@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, RadioField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, RadioField, FileField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Optional
 from app.models import User
 from flask_login import current_user
@@ -71,3 +71,7 @@ class DeleteAccountForm(FlaskForm):
     def validate_password(self, password):
       if not current_user.check_password(password.data):
         raise ValidationError('Incorrect password.')
+
+class ProfilePictureForm(FlaskForm):
+    file = FileField('Profile Picture', validators=[DataRequired()])
+    submit = SubmitField('Upload Picture')

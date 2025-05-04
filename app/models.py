@@ -13,6 +13,7 @@ class User(UserMixin,db.Model):
     password_hash: so.Mapped[Optional[str]] = so.mapped_column(sa.String(256))
     
     theme: so.Mapped[str] = so.mapped_column(sa.String(10), default='light', nullable=False)
+    profile_picture: so.Mapped[str] = so.mapped_column(sa.String(500), default='default_pfp.jpg')
 
     # Relationships
     books: so.Mapped[List["Book"]] = so.relationship(back_populates="creator", cascade="all, delete-orphan")
