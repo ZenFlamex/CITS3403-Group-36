@@ -3,37 +3,66 @@
 {% block content %}
 <h2>My Profile</h2>
 
-<div class="row" style="align-items: center;">
-    <div class="col-md-6 text-center">
-        <div style="width: 300px; height: 300px; background-color: #ccc; border-radius: 50%; margin: 0 auto;">
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="alert-container">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} mt-2">
+                    {{ message }}
+                </div>
+            {% endfor %}
         </div>
-        <p style="font-size: 1.2rem; font-weight: bold;">Profile Picture</p>
+    {% endif %}
+{% endwith %}
+
+<div class="row">
+    <div class="col-md-4 text-center">
+        <div class="profile-picture-container" id="profilePictureContainer" style="cursor: pointer;">
+            {% set profile_picture = current_user.profile_picture or 'default_pfp.png' %}
+            <img src="{{ url_for('static', filename='images/profile_pictures/' + (current_user.profile_picture or 'default_pfp.png')) }}" 
+                 class="img-fluid rounded-circle profile-picture"
+                 id="profilePreview">
+            
+            <form action="{{ url_for('upload_profile_picture') }}" method="POST" enctype="multipart/form-data" id="profileForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="file" id="profilePictureInput" name="file" accept="image/*" style="display: none;">
+                <div class="profile-overlay">+</div>
+            </form>
+        </div>
+
+        <p class="mt-1" style="font-size: 1.2rem; font-weight: bold;">Profile Picture</p>
+
+        <form action="{{ url_for('remove_profile_picture') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger mt-2">Remove Profile Picture</button>
+        </form>
     </div>
+
     <div class="col-md-6">
         <p style="font-size: 1.5rem;"><strong>Username:</strong> {{ username }}</p>
         <p style="font-size: 1.5rem;"><strong>Email:</strong> {{ current_user.email }}</p>
+        <p style="font-size: 1.5rem;"><strong>Birthday:</strong> [Birthday Placeholder]</p>
         <p style="font-size: 1.5rem;"><strong>Join Date:</strong> [Join Date Placeholder]</p>
         <p style="font-size: 1.5rem;"><strong>Favourite Genre:</strong> [Favourite Genre Placeholder]</p>
     </div>
 </div>
 
-<div class="row" style="margin-top: 2rem;">
+<!-- Recently Added Books Section -->
+<div class="row mt-4">
     <div class="col-12">
         <h3>Recently Added Books</h3>
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+        <div class="row">
             {% for book in recent_books %}
-            <div class="col">
-                <a href="{{ url_for('book_detail', book_id=book.id) }}" class="text-decoration-none">
-                    <div class="book-card card h-100">
-                        <div class="book-cover-container position-relative">
-                            <img src="{{ book.cover_image }}" alt="{{ book.title }} Cover" class="card-img-top book-cover">
-                        </div>
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title fs-6">{{ book.title }}</h5>
-                            <p class="card-text text-muted small mb-2 flex-grow-1">{{ book.author }}</p>
-                        </div>
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="book-card card h-100">
+                    <div class="book-cover-container">
+                        <img src="{{ book.cover_image }}" alt="{{ book.title }} Cover" class="card-img-top book-cover">
                     </div>
-                </a>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ book.title }}</h5>
+                        <p class="card-text text-muted">{{ book.author }}</p>
+                    </div>
+                </div>
             </div>
             {% endfor %}
         </div>
