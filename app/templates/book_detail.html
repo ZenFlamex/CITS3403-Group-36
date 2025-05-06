@@ -18,32 +18,61 @@
 
             {% if is_owner %}
             <div class="d-grid gap-2">
-                <div class="dropdown">
-                    <button class="btn btn-warning dropdown-toggle w-100 " type="button" id="changeStatusDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        Current Status: {{ book.status }}
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="changeStatusDropdown">
-                        <li><a class="dropdown-item {% if book.status == 'Completed' %}active{% endif %}" href="#">Mark as Completed</a></li>
-                        <li><a class="dropdown-item {% if book.status == 'Dropped' %}active{% endif %}" href="#">Mark as Dropped</a></li>
-                        <li><a class="dropdown-item {% if book.status == 'In Progress' %}active{% endif %}" href="#">Mark as In Progress</a></li>
-                    </ul>
+                <!-- Change Status Dropdown -->
+                <div class="dropdown mb-3">
+                    <form method="POST" action="{{ url_for('change_status', book_id=book.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-warning dropdown-toggle w-100" type="button" id="changeStatusDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            Current Status: {{ book.status }}
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="changeStatusDropdown">
+                            <li>
+                                <button class="dropdown-item {% if book.status == 'Completed' %}active{% endif %}" type="submit" name="status" value="Completed">Mark as Completed</button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item {% if book.status == 'Dropped' %}active{% endif %}" type="submit" name="status" value="Dropped">Mark as Dropped</button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item {% if book.status == 'In Progress' %}active{% endif %}" type="submit" name="status" value="In Progress">Mark as In Progress</button>
+                            </li>
+                        </ul>
+                    </form>
                 </div>
 
-                <button class="btn btn-primary d-flex align-items-center justify-content-center">
-                    {% if book.is_favorited %}
-                        <i class="bi bi-heart-fill text-danger me-2"></i> Remove from Favorites
-                    {% else %}
-                        <i class="bi bi-heart me-2"></i> Add to Favorites
-                    {% endif %}
-                </button>
+                <!-- Favorites and Public/Private Buttons -->
+                <div class="d-flex justify-content-between">
+                    <!-- Toggle Favorite Button -->
+                    <form method="POST" action="{{ url_for('toggle_favorite', book_id=book.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-primary d-flex align-items-center justify-content-center" type="submit">
+                            {% if book.is_favorite %}
+                                <i class="bi bi-heart-fill text-danger me-2"></i> Remove from Favorites
+                            {% else %}
+                                <i class="bi bi-heart me-2"></i> Add to Favorites
+                            {% endif %}
+                        </button>
+                    </form>
 
-                <button class="btn btn-secondary">
-                    {% if book.is_public %}
-                        Make Private
-                    {% else %}
-                        Make Public
-                    {% endif %}
-                </button>
+                    <!-- Toggle Public/Private Button -->
+                    <form method="POST" action="{{ url_for('toggle_public', book_id=book.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-secondary d-flex align-items-center justify-content-center" type="submit">
+                            {% if book.is_public %}
+                                <i class="bi bi-eye me-2"></i> Make Private
+                            {% else %}
+                                <i class="bi bi-eye-slash me-2"></i> Make Public
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Delete Book Button -->
+                <form method="POST" action="{{ url_for('delete_book', book_id=book.id) }}" class="mt-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-danger w-100" type="submit" onclick="return confirm('Are you sure you want to delete this book? This action cannot be undone.');">
+                        <i class="bi bi-trash me-2"></i> Delete Book
+                    </button>
+                </form>
             </div>
             {% endif %}
         </div>
@@ -52,7 +81,8 @@
             <h3>Book Details</h3>
             <p><strong>Status:</strong> {{ book.status }}</p>
             <p><strong>Pages:</strong> {{ book.current_page }}/{{ book.total_pages if book.total_pages > 0 else '?' }}</p>
-            <p><strong>Rating:</strong>
+            <p><strong>Rating:</strong></p>
+            <div id="rating-container" class="d-flex align-items-center">
                 {% if book.rating and book.rating > 0 %}
                     {% for i in range(book.rating) %}
                         <i class="bi bi-star-fill text-warning"></i>
@@ -63,7 +93,26 @@
                 {% else %}
                     <span class="text-muted">Not Rated</span>
                 {% endif %}
-            </p>
+            </div>
+
+            <!-- Button to Change Rating -->
+            {% if is_owner %}
+                <form method="POST" action="{{ url_for('update_rating', book_id=book.id) }}" class="mt-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="d-flex align-items-center">
+                        <select name="rating" class="form-select me-2" style="width: auto;">
+                            <option value="0" {% if book.rating == 0 %}selected{% endif %}>0</option>
+                            <option value="1" {% if book.rating == 1 %}selected{% endif %}>1</option>
+                            <option value="2" {% if book.rating == 2 %}selected{% endif %}>2</option>
+                            <option value="3" {% if book.rating == 3 %}selected{% endif %}>3</option>
+                            <option value="4" {% if book.rating == 4 %}selected{% endif %}>4</option>
+                            <option value="5" {% if book.rating == 5 %}selected{% endif %}>5</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary">Change Rating</button>
+                    </div>
+                </form>
+            {% endif %}
+
             <p><strong>Start Date:</strong> {{ book.start_date.strftime('%d %B %Y') if book.start_date else 'N/A' }}</p>
             <p><strong>End Date:</strong> {{ book.end_date.strftime('%d %B %Y') if book.end_date else 'N/A' }}</p>
             <p><strong>Public:</strong> {{ 'Yes' if book.is_public else 'No' }}</p>

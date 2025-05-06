@@ -591,3 +591,93 @@ def delete_reading_progress(book_id, progress_id):
 
     flash("Reading progress entry deleted successfully!", "success")
     return redirect(url_for('book_detail', book_id=book.id))
+
+@application.route('/book/<int:book_id>/change_status', methods=['POST'])
+def change_status(book_id):
+    book = Book.query.get_or_404(book_id)
+
+    # Ensure only the owner can change the status
+    if book.creator_id != current_user.id:
+        abort(403)
+
+    new_status = request.form.get('status')
+    if new_status in ['Completed', 'Dropped', 'In Progress']:
+        book.status = new_status
+        db.session.commit()
+        flash(f"Book status updated to '{new_status}'.", "success")
+    else:
+        flash("Invalid status.", "danger")
+
+    return redirect(url_for('book_detail', book_id=book.id))
+
+
+@application.route('/book/<int:book_id>/toggle_favorite', methods=['POST'])
+def toggle_favorite(book_id):
+    book = Book.query.get_or_404(book_id)
+
+    # Ensure only the owner can toggle favorites
+    if book.creator_id != current_user.id:
+        abort(403)
+
+    # Toggle the is_favorite attribute
+    book.is_favorite = not book.is_favorite
+    db.session.commit()
+
+    if book.is_favorite:
+        flash("Book added to favorites.", "success")
+    else:
+        flash("Book removed from favorites.", "success")
+
+    return redirect(url_for('book_detail', book_id=book.id))
+
+
+@application.route('/book/<int:book_id>/toggle_public', methods=['POST'])
+def toggle_public(book_id):
+    book = Book.query.get_or_404(book_id)
+
+    # Ensure only the owner can toggle public/private status
+    if book.creator_id != current_user.id:
+        abort(403)
+
+    book.is_public = not book.is_public
+    db.session.commit()
+
+    if book.is_public:
+        flash("Book is now public.", "success")
+    else:
+        flash("Book is now private.", "success")
+
+    return redirect(url_for('book_detail', book_id=book.id))
+
+@application.route('/book/<int:book_id>/delete', methods=['POST'])
+def delete_book(book_id):
+    book = Book.query.get_or_404(book_id)
+
+    # Ensure only the owner can delete the book
+    if book.creator_id != current_user.id:
+        abort(403)
+
+    # Delete the book
+    db.session.delete(book)
+    db.session.commit()
+    flash("Book deleted successfully.", "success")
+
+    return redirect(url_for('index'))
+
+@application.route('/book/<int:book_id>/update_rating', methods=['POST'])
+def update_rating(book_id):
+    book = Book.query.get_or_404(book_id)
+
+    # Ensure only the owner can update the rating
+    if book.creator_id != current_user.id:
+        abort(403)
+
+    new_rating = request.form.get('rating', type=int)
+    if new_rating is not None and 0 <= new_rating <= 5:
+        book.rating = new_rating
+        db.session.commit()
+        flash("Book rating updated successfully.", "success")
+    else:
+        flash("Invalid rating value.", "danger")
+
+    return redirect(url_for('book_detail', book_id=book.id))
