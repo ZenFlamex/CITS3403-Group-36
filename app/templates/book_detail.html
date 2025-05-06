@@ -22,18 +22,18 @@
                 <div class="dropdown mb-3">
                     <form method="POST" action="{{ url_for('change_status', book_id=book.id) }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button class="btn btn-warning dropdown-toggle w-100" type="button" id="changeStatusDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button class="btn btn-warning dropdown-toggle w-100" type="button" id="changeStatusDropdown" data-bs-toggle="dropdown" aria-expanded="false" {% if book.status == 'Completed' %}disabled{% endif %}>
                             Current Status: {{ book.status }}
                         </button>
                         <ul class="dropdown-menu" aria-labelledby="changeStatusDropdown">
                             <li>
-                                <button class="dropdown-item {% if book.status == 'Completed' %}active{% endif %}" type="submit" name="status" value="Completed">Mark as Completed</button>
+                                <button class="dropdown-item {% if book.status == 'Completed' %}active{% endif %}" type="submit" name="status" value="Completed" {% if book.current_page < book.total_pages %}disabled{% endif %}>Mark as Completed</button>
                             </li>
                             <li>
-                                <button class="dropdown-item {% if book.status == 'Dropped' %}active{% endif %}" type="submit" name="status" value="Dropped">Mark as Dropped</button>
+                                <button class="dropdown-item {% if book.status == 'Dropped' %}active{% endif %}" type="submit" name="status" value="Dropped" {% if book.status == 'Completed' %}disabled{% endif %}>Mark as Dropped</button>
                             </li>
                             <li>
-                                <button class="dropdown-item {% if book.status == 'In Progress' %}active{% endif %}" type="submit" name="status" value="In Progress">Mark as In Progress</button>
+                                <button class="dropdown-item {% if book.status == 'In Progress' %}active{% endif %}" type="submit" name="status" value="In Progress" {% if book.status == 'Completed' %}disabled{% endif %}>Mark as In Progress</button>
                             </li>
                         </ul>
                     </form>
@@ -80,7 +80,7 @@
         <div class="col-md-7">
             <h3>Book Details</h3>
             <p><strong>Status:</strong> {{ book.status }}</p>
-            <p><strong>Pages:</strong> {{ book.current_page }}/{{ book.total_pages if book.total_pages > 0 else '?' }}</p>
+            <p><strong>Pages:</strong> {{ total_pages_read }}/{{ book.total_pages if book.total_pages > 0 else '?' }}</p>
             <p><strong>Rating:</strong></p>
             <div id="rating-container" class="d-flex align-items-center">
                 {% if book.rating and book.rating > 0 %}
@@ -134,7 +134,15 @@
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <div class="mb-3">
                                 <label for="pagesRead" class="form-label">Current Page</label>
-                                <input type="number" id="pagesRead" name="pagesRead" class="form-control" placeholder="Enter current page number" min="0" max="{{ book.total_pages if book.total_pages > 0 else '' }}">
+                                <input 
+                                    type="number" 
+                                    id="pagesRead" 
+                                    name="pagesRead" 
+                                    class="form-control" 
+                                    placeholder="Enter current page number" 
+                                    min="0" 
+                                    max="{{ book.total_pages - total_pages_read if book.total_pages > 0 else '' }}" 
+                                    required>
                             </div>
                             <div class="mb-3">
                                 <label for="readingNotes" class="form-label">Notes</label>
