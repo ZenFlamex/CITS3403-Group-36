@@ -7,3 +7,9 @@ venv/
 
 # Database files
 *.db
+
+# User Uploaded Profile Pictures
+*.png
+*.jpg
+*.jpeg
+*.gif

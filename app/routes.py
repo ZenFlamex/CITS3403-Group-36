@@ -280,8 +280,13 @@ def upload_profile_picture():
     form = ProfilePictureForm()
     if form.validate_on_submit():
         file = form.file.data
-        filename = datetime.now().strftime('%Y%m%d%H%M%S_') + file.filename
-        upload_path = os.path.join(application.root_path, 'static', 'images', 'profile_pictures')
+        if not allowed_file(file.filename):  # Check if file type is allowed
+            flash('Invalid file type. Only PNG, JPG, JPEG, and GIF are allowed.', 'danger')
+            return redirect(url_for('profile'))
+
+        # Sanitize and save the filename
+        filename = datetime.now().strftime('%Y%m%d%H%M%S_') + secure_filename(file.filename)
+        upload_path = os.path.join(application.root_path, 'static', 'images')
 
         os.makedirs(upload_path, exist_ok=True)
 
@@ -308,11 +313,17 @@ def remove_profile_picture():
     if current_user.profile_picture == 'default_pfp.png':
         flash('You cannot remove the default profile picture.', 'warning')
         return redirect(url_for('profile'))
+    
+    upload_path = os.path.join(application.root_path, 'static', 'images')
+    old_picture = current_user.profile_picture
+    if old_picture and old_picture != 'default_pfp.png':
+        old_path = os.path.join(upload_path, old_picture)
+        if os.path.exists(old_path):
+            os.remove(old_path)
 
     current_user.profile_picture = 'default_pfp.png'
     db.session.commit()
-    
-    flash('Your profile picture has been removed.', 'success')
+    flash("Profile picture reset to default.", "info")
     return redirect(url_for('profile'))
 
 @application.route('/settings', methods=['GET', 'POST']) 

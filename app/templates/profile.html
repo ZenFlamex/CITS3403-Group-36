@@ -3,23 +3,11 @@
 {% block content %}
 <h2>My Profile</h2>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        <div class="alert-container">
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} mt-2">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
-{% endwith %}
-
 <div class="row">
     <div class="col-md-4 text-center">
         <div class="profile-picture-container" id="profilePictureContainer" style="cursor: pointer;">
             {% set profile_picture = current_user.profile_picture or 'default_pfp.png' %}
-            <img src="{{ url_for('static', filename='images/profile_pictures/' + (current_user.profile_picture or 'default_pfp.png')) }}" 
+            <img src="{{ url_for('static', filename='images/' + profile_picture) }}" 
                  class="img-fluid rounded-circle profile-picture"
                  id="profilePreview">
             
@@ -28,14 +16,22 @@
                 <input type="file" id="profilePictureInput" name="file" accept="image/*" style="display: none;">
                 <div class="profile-overlay">+</div>
             </form>
+
+            <form action="{{ url_for('remove_profile_picture') }}" method="POST" id="resetForm" style="display: none;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            </form>
         </div>
 
-        <p class="mt-1" style="font-size: 1.2rem; font-weight: bold;">Profile Picture</p>
+        <div id="profileOptionModal" class="modal-overlay" style="display: none;">
+            <div class="modal-box">
+              <p><strong>Profile Picture Options</strong></p>
+              <button id="uploadBtn">Upload New</button>
+              <button id="resetBtn">Reset to Default</button>
+              <button id="closeModal">Cancel</button>
+            </div>
+          </div>
 
-        <form action="{{ url_for('remove_profile_picture') }}" method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-danger mt-2">Remove Profile Picture</button>
-        </form>
+        <p class="mt-1" style="font-size: 1.2rem; font-weight: bold;">Profile Picture</p>
     </div>
 
     <div class="col-md-6">
@@ -47,7 +43,6 @@
     </div>
 </div>
 
-<!-- Recently Added Books Section -->
 <div class="row mt-4">
     <div class="col-12">
         <h3>Recently Added Books</h3>
