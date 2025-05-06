@@ -4,7 +4,7 @@
 <h2>My Profile</h2>
 
 <div class="row">
-    <div class="col-md-4 text-center">
+    <div class="col-md-6 text-center">
         <div class="profile-picture-container" id="profilePictureContainer" style="cursor: pointer;">
             {% set profile_picture = current_user.profile_picture or 'default_pfp.png' %}
             <img src="{{ url_for('static', filename='images/' + profile_picture) }}" 
@@ -30,14 +30,11 @@
               <button id="closeModal">Cancel</button>
             </div>
           </div>
-
-        <p class="mt-1" style="font-size: 1.2rem; font-weight: bold;">Profile Picture</p>
     </div>
 
-    <div class="col-md-6">
+    <div class="col-md-6" style="margin-top: 50px;">
         <p style="font-size: 1.5rem;"><strong>Username:</strong> {{ username }}</p>
         <p style="font-size: 1.5rem;"><strong>Email:</strong> {{ current_user.email }}</p>
-        <p style="font-size: 1.5rem;"><strong>Birthday:</strong> [Birthday Placeholder]</p>
         <p style="font-size: 1.5rem;"><strong>Join Date:</strong> [Join Date Placeholder]</p>
         <p style="font-size: 1.5rem;"><strong>Favourite Genre:</strong> [Favourite Genre Placeholder]</p>
     </div>
