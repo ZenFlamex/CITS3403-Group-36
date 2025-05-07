@@ -430,3 +430,12 @@ input[type="submit"]:active, .btn-primary[type="submit"]:active {
     font-size: 1rem;
     cursor: pointer;
   }
+
+/* Page Title Change on My Books Page */
+
+  .page-title {
+    transition: opacity 0.3s ease;
+  }
+  .page-title.hidden {
+    opacity: 0;
+  }
