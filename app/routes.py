@@ -850,12 +850,7 @@ def check_and_create_milestone_notifications(user):
             'text': 'Sharing is caring! You shared your first book.',
             'link': lambda: url_for('my_books', _external=True)
         },
-         'received_first_share': {
-             'condition': lambda u: BookShare.query.filter_by(shared_with_user_id=u.id).count() >= 1,
-             'text': 'A book gift! A friend shared a book with you.',
-             'link': lambda: url_for('index', _external=True) 
-       
-         },
+         
     }
 
     for key, config in milestones.items():
