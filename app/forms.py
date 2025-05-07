@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import DateField, IntegerField, SelectField, StringField, PasswordField, BooleanField, SubmitField, RadioField
+from wtforms import DateField, IntegerField, SelectField, StringField, PasswordField, BooleanField, SubmitField, RadioField, FileField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Optional
 from app.models import User
 from flask_login import current_user
@@ -160,3 +160,8 @@ class BookUploadForm(FlaskForm):
                 return False
         
         return True
+
+# --- Profile Picture Upload Form ---
+class ProfilePictureForm(FlaskForm):
+    file = FileField('Profile Picture', validators=[DataRequired()])
+    submit = SubmitField('Upload Picture')
