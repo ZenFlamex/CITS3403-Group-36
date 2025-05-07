@@ -256,9 +256,9 @@ def upload_book():
 @application.route('/my_books')
 @login_required
 def my_books():
-    favourites_filter = request.args.get('favourites', '0')
+    favourites_filter = request.args.get('favourites', '0') == '1'
 
-    if favourites_filter == '1':
+    if favourites_filter:
         user_books = Book.query.filter_by(creator_id=current_user.id, is_favorite=True).all()
     else:
         user_books = Book.query.filter_by(creator_id=current_user.id).all()
