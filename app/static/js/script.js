@@ -51,17 +51,22 @@ function setupNotificationClickHandlers() {
                 })
                 .then(data => {
                     if (data.success) {
-                        console.log(`Notification ${notificationId} successfully marked as read by server.`);
+                        console.log(`Notification ${notificationId} successfully marked as read by server. Removing item from dropdown.`);
 
-                        notificationItem.classList.remove('list-group-item-light', 'unread');
-                        notificationItem.classList.add('list-group-item-secondary', 'text-muted');
-                        const indicator = notificationItem.querySelector('.unread-indicator');
-                        if (indicator) {
-                            indicator.remove(); 
+                        const listItem = notificationItem.closest('li'); 
+                        if (listItem) {
+                            const nextSibling = listItem.nextElementSibling; 
+                            listItem.remove(); 
+                            console.log("Notification <li> item removed from DOM.");
+
+                            if (nextSibling && nextSibling.firstElementChild && nextSibling.firstElementChild.tagName === 'HR' && nextSibling.firstElementChild.classList.contains('dropdown-divider')) {
+                                nextSibling.remove();
+                                console.log("Associated divider removed from DOM.");
+                            }
+                        } else {
+                            console.warn("Could not find parent <li> to remove for notificationItem. Removing the item itself as a fallback.");
+                            notificationItem.remove();
                         }
-                        notificationItem.setAttribute('aria-current', 'false');
-                        console.log("Notification item UI updated.");
-
                         const badge = document.getElementById('notification-count-badge');
                         if (badge) {
                             let currentCount = parseInt(badge.textContent);

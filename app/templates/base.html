@@ -48,15 +48,18 @@
                                     <span class="visually-hidden">unread notifications</span>
                                 </span>
                                 {% endif %}
-                            </i>
+                            </i>    
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end notification-dropdown-menu" aria-labelledby="navbarNotificationDropdown" style="min-width: 300px; max-height: 400px; overflow-y: auto;">
-                            <li><h6 class="dropdown-header">New Notifications</h6></li> 
-                
-                            {% if unread_notifications_for_dropdown %} 
+                            <li><h6 class="dropdown-header">New Notifications</h6></li>
+
+                            {% if unread_notifications_for_dropdown %}
                                 {% for notification in unread_notifications_for_dropdown %}
-                                <li>
-                                    <a class="dropdown-item text-wrap fw-bold" href="{{ notification.link if notification.link else '#' }}"> 
+                                <li> <a class="dropdown-item text-wrap notification-item unread fw-bold"  
+                                    href="{{ notification.link if notification.link else '#' }}"
+                                    data-notification-id="{{ notification.id }}"  {# 添加 data-notification-id #}
+                                    data-target-link="{{ notification.link if notification.link else '#' }}" {# 添加 data-target-link #}
+                                    >
                                         <small>
                                             {% if notification.type == 'goal' %}
                                                 <i class="bi bi-flag-fill me-2 text-primary" title="Goal Update"></i>
@@ -67,26 +70,24 @@
                                             {% elif notification.type == 'announcement' %}
                                                 <i class="bi bi-megaphone-fill me-2 text-danger" title="Announcement"></i>
                                             {% else %}
-                                                <i class="bi bi-bell me-2 text-secondary" title="Notification"></i> 
+                                                <i class="bi bi-bell me-2 text-secondary" title="Notification"></i>
                                             {% endif %}
-                                            
+
                                             {% if notification.sender_name and notification.sender_name not in ['system', 'admin'] %}
                                                 <strong>{{ notification.sender_name }}</strong>
                                             {% endif %}
-                                            
+
                                             {{ notification.text }}
-                                            
-                                            {# <span class="text-muted ms-1">({{ notification.timestamp | datetimeformat }})</span> #}
                                         </small>
                                     </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li> 
+                                    </li>
+                                <li><hr class="dropdown-divider"></li>
                                 {% endfor %}
                             {% else %}
-                                <li><p class="dropdown-item text-muted text-center small mb-0">No new notifications.</p></li> 
+                                <li><p class="dropdown-item text-muted text-center small mb-0">No new notifications.</p></li>
                                 <li><hr class="dropdown-divider"></li>
                             {% endif %}
-    
+
                             <li class="px-3 py-2">
                                 <a href="{{ url_for('notifications') }}" class="btn btn-primary btn-sm d-block">View All Notifications</a>
                             </li>

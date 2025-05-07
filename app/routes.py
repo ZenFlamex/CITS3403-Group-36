@@ -32,7 +32,7 @@ def inject_notifications():
         unread_notifications_for_dropdown = Notification.query.filter_by(
             receiver_id=current_user.id,
             is_read=False  
-        ).order_by(Notification.timestamp.desc()).limit(5).all() 
+        ).order_by(Notification.timestamp.desc()).limit(8).all() 
 
         unread_count = Notification.query.filter_by(
             receiver_id=current_user.id,
