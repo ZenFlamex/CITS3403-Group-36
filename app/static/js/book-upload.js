@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const endDateInput = document.querySelector('#end_date');
     const currentPageField = document.querySelector('.current-page-field');
     const endDateField = document.querySelector('.end-date-field');
+    const ratingSelect = document.querySelector('#rating');
     
     // Default cover image
     const defaultCoverImage = coverPreview.src;
@@ -27,7 +28,12 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentPage = 1;
     const resultsPerPage = 5;
     
-    // Event listeners
+    // If there are any server-side validation errors, scroll to the form
+    const serverErrors = document.querySelectorAll('.text-danger');
+    if (serverErrors.length > 0) {
+        window.scrollTo(0, bookForm.offsetTop + 100);
+    }
+
     searchButton.addEventListener('click', () => performSearch(true));
     searchInput.addEventListener('keypress', e => {
         if (e.key === 'Enter') {
@@ -51,6 +57,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Form submission validation
     bookForm.addEventListener('submit', function(e) {
+        // Check if form is already being submitted
+        if (this.classList.contains('submitting')) {
+            e.preventDefault();
+            return false;
+        }
+        
         let isValid = true;
         
         bookForm.querySelectorAll('input, select').forEach(field => {
@@ -65,11 +77,53 @@ document.addEventListener('DOMContentLoaded', function() {
             isValid = false;
         }
         
+        // Check if current page equals total page but status is "In Progress"
+        if (isValid && statusSelect.value === 'In Progress') {
+            const currentPage = parseInt(currentPageInput.value) || 0;
+            const totalPages = parseInt(totalPagesInput.value) || 0;
+            
+            if (totalPages > 0 && currentPage === totalPages) {
+                e.preventDefault();
+                
+                
+                statusSelect.value = 'Completed';
+                updateFormVisibility();
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-info';
+                alertDiv.innerHTML = '<strong>Note:</strong> The book status has been changed to "Completed" because the current page equals the total pages. Please provide a rating.';
+
+                const existingAlerts = document.querySelectorAll('.alert-info');
+                existingAlerts.forEach(alert => alert.remove());
+
+                bookForm.insertBefore(alertDiv, bookForm.firstChild);
+
+                window.scrollTo(0, bookForm.offsetTop - 100);
+
+                if (ratingSelect) {
+                    ratingSelect.focus();
+                }
+                
+                return false;
+            }
+        }
+        
+        // If validation fails, don't mark as submitting
         if (!isValid) {
             e.preventDefault();
             if (selectedBookInfo) {
                 restoreBookInfo();
             }
+            return false;
+        }
+        
+        // Mark the form as being submitted
+        this.classList.add('submitting');
+        
+        // Disable the submit button
+        const submitButton = this.querySelector('input[type="submit"]');
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.value = 'Adding Book...';
         }
     });
     
@@ -88,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
             currentPage = 1;
             searchResults.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><div class="mt-2">Searching...</div></div>';
         } else {
-            // Add loading indicator at the bottom
+            
             const loadingIndicator = document.createElement('div');
             loadingIndicator.id = 'load-more-spinner';
             loadingIndicator.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-primary" role="status"></div><span class="ms-2">Loading more...</span></div>';
@@ -123,11 +177,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (resetResults) {
                     showSearchError('Error searching OpenLibrary. Please try again or enter details manually.');
                 } else {
-                    // Remove the loading spinner
                     const spinner = document.getElementById('load-more-spinner');
                     if (spinner) spinner.remove();
                     
-                    // Show error at the bottom
                     const errorDiv = document.createElement('div');
                     errorDiv.className = 'alert alert-warning mt-2';
                     errorDiv.textContent = 'Failed to load more results. Please try again.';
@@ -136,9 +188,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
     
-    // Display search results
+    
     function displaySearchResults(data, resetResults = true) {
-        // Remove loading spinner if it exists
+        
         const spinner = document.getElementById('load-more-spinner');
         if (spinner) spinner.remove();
         
@@ -158,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
             searchResults.innerHTML = '<div class="list-group"></div>';
         }
         
-        // Get the list-group element
+        
         let resultsGroup = searchResults.querySelector('.list-group');
         if (!resultsGroup) {
             resultsGroup = document.createElement('div');
@@ -166,7 +218,7 @@ document.addEventListener('DOMContentLoaded', function() {
             searchResults.appendChild(resultsGroup);
         }
         
-        // Append new results
+        
         data.docs.forEach(book => {
             const title = book.title || 'Unknown Title';
             const authors = book.author_name ? book.author_name.join(', ') : 'Unknown Author';
@@ -389,6 +441,10 @@ document.addEventListener('DOMContentLoaded', function() {
         coverPreview.src = defaultCoverImage;
         searchResults.innerHTML = '';
         
+        // Remove any alert messages at the top of the form
+        const alertMessages = bookForm.querySelectorAll('.alert');
+        alertMessages.forEach(alert => alert.remove());
+        
         selectedBookInfo = null;
         
         clearValidationErrors();
@@ -529,6 +585,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+
     
     updateFormVisibility();
 
@@ -543,5 +600,5 @@ document.addEventListener('DOMContentLoaded', function() {
 
         populateFormFromBook(restoredBookInfo);
     }
-
+    
 });

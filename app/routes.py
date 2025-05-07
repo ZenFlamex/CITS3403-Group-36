@@ -2,11 +2,13 @@ from app import application, db
 from app.models import User, Book, Notification, BookShare, ReadingProgress
 from flask import flash, redirect, render_template, g, request, url_for, session, jsonify, abort
 from datetime import datetime
-from app.forms import LoginForm, SignupForm, AccountSettingsForm, ThemeForm, DeleteAccountForm, BookUploadForm
+from app.forms import LoginForm, SignupForm, AccountSettingsForm, ThemeForm, DeleteAccountForm, BookUploadForm, ProfilePictureForm
 from flask_login import current_user, login_user, logout_user, login_required
 from urllib.parse import urlsplit
 from sqlalchemy import func
+from werkzeug.utils import secure_filename
 import requests
+import os
 
 
 #  Format a timestamp string into 'DD MonthName YYYY HH:MM' format.
@@ -278,6 +280,65 @@ def profile():
         recent_books=recent_books
     )
 
+## Set up the upload folder and allowed file extensions for profile pictures
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif'}
+
+def sanitize_filename(filename):
+    return ''.join(c for c in filename if c.isalnum() or c in '._-')
+
+@application.route('/upload_profile_picture', methods=['POST'])
+@login_required
+def upload_profile_picture():
+    form = ProfilePictureForm()
+    if form.validate_on_submit():
+        file = form.file.data
+        if not allowed_file(file.filename):  # Check if file type is allowed
+            flash('Invalid file type. Only PNG, JPG, JPEG, and GIF are allowed.', 'danger')
+            return redirect(url_for('profile'))
+
+        # Sanitize and save the filename
+        filename = datetime.now().strftime('%Y%m%d%H%M%S_') + secure_filename(file.filename)
+        upload_path = os.path.join(application.root_path, 'static', 'images')
+
+        os.makedirs(upload_path, exist_ok=True)
+
+        file_path = os.path.join(upload_path, filename)
+        file.save(file_path)
+
+        old_picture = current_user.profile_picture
+        if old_picture and old_picture != 'default_pfp.png':
+            old_path = os.path.join(upload_path, old_picture)
+            if os.path.exists(old_path):
+                os.remove(old_path)
+
+        current_user.profile_picture = filename
+        db.session.commit()
+
+        flash('Profile picture updated successfully.', 'success')
+        return redirect(url_for('profile'))
+
+    flash('Error uploading profile picture.', 'danger')
+    return redirect(url_for('profile'))
+
+@application.route('/remove-profile-picture', methods=['POST'])
+def remove_profile_picture():
+    if current_user.profile_picture == 'default_pfp.png':
+        flash('You cannot remove the default profile picture.', 'warning')
+        return redirect(url_for('profile'))
+    
+    upload_path = os.path.join(application.root_path, 'static', 'images')
+    old_picture = current_user.profile_picture
+    if old_picture and old_picture != 'default_pfp.png':
+        old_path = os.path.join(upload_path, old_picture)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    current_user.profile_picture = 'default_pfp.png'
+    db.session.commit()
+    flash("Profile picture reset to default.", "info")
+    return redirect(url_for('profile'))
+
 @application.route('/settings', methods=['GET', 'POST']) 
 @login_required
 def settings():
@@ -372,15 +433,15 @@ def notifications():
 def book_detail(book_id):
     book = Book.query.get_or_404(book_id)
 
-    is_owner = False 
-    has_shared_access = False 
-    can_view = False 
-    shared_with_list = [] 
-    reading_progress_data = [] 
+    is_owner = False
+    has_shared_access = False
+    can_view = False
+    shared_with_list = []
+    reading_progress_data = []
 
     if book.is_public:
         can_view = True
-        if current_user.is_authenticated: 
+        if current_user.is_authenticated:
             is_owner = (book.creator_id == current_user.id)
     elif current_user.is_authenticated:
         is_owner = (book.creator_id == current_user.id)
@@ -394,37 +455,40 @@ def book_detail(book_id):
 
     if not can_view:
         flash("You don't have permission to view this private book.", "danger")
-    
         if current_user.is_authenticated:
-             return redirect(url_for('my_books'))
+            return redirect(url_for('my_books'))
         else:
-             return redirect(url_for('login', next=request.url))
+            return redirect(url_for('login', next=request.url))
 
     try:
-        if hasattr(book, 'reading_progress') and book.reading_progress: 
-             reading_progress_data = [
-                 {"pages_read": progress.pages_read}
-                 for progress in book.reading_progress
-             ]
-           
-             total_pages_read = sum(item['pages_read'] for item in reading_progress_data) 
-             total_entries = len(reading_progress_data)
-             average_pages_read = total_pages_read / total_entries if total_entries > 0 else 0
+        if hasattr(book, 'reading_progress') and book.reading_progress:
+            reading_progress_data = [
+                {"pages_read": progress.pages_read}
+                for progress in book.reading_progress
+            ]
+
+            # Calculate total pages read by summing all pages in the reading history
+            total_pages_read = sum(item['pages_read'] for item in reading_progress_data)
+
+            # Calculate average pages read
+            total_entries = len(reading_progress_data)
+            average_pages_read = total_pages_read / total_entries if total_entries > 0 else 0
         else:
-             reading_progress_data = []
+            reading_progress_data = []
+            total_pages_read = 0
+            average_pages_read = 0
     except Exception as e:
         application.logger.error(f"Error calculating reading progress for book {book_id}: {e}")
-        reading_progress_data = [] 
+        reading_progress_data = []
+        total_pages_read = 0
+        average_pages_read = 0
 
     if is_owner:
         shares_info = db.session.query(
-                BookShare.id.label('share_id'),
-                User.id.label('user_id'),
-                User.username
-            ).\
-            join(User, BookShare.shared_with_user_id == User.id).\
-            filter(BookShare.book_id == book.id).\
-            all()
+            BookShare.id.label('share_id'),
+            User.id.label('user_id'),
+            User.username
+        ).join(User, BookShare.shared_with_user_id == User.id).filter(BookShare.book_id == book.id).all()
         shared_with_list = [row._asdict() for row in shares_info]
 
     return render_template(
@@ -434,7 +498,9 @@ def book_detail(book_id):
         is_owner=is_owner,
         has_shared_access=has_shared_access,
         shared_with_list=shared_with_list,
-        reading_progress_data=reading_progress_data 
+        reading_progress_data=reading_progress_data,
+        total_pages_read=total_pages_read,  # Pass total pages read to the template
+        average_pages_read=average_pages_read
     )
 
 # --- API Route to Search Users ---
@@ -606,27 +672,38 @@ def revoke_share(share_id):
 def add_reading_progress(book_id):
     book = Book.query.get_or_404(book_id)
     if book.creator_id != current_user.id:
-        flash("You don't have permission to update this book.", "danger")
-        return redirect(url_for('book_detail', book_id=book.id))
+        abort(403)
 
     pages_read = request.form.get('pagesRead', type=int)
-    notes = request.form.get('readingNotes', type=str)
+    notes = request.form.get('readingNotes', '')
 
-    total_pages_read = sum(p.pages_read for p in book.reading_progress)
-    if book.total_pages > 0 and (total_pages_read + pages_read) > book.total_pages:
-         remaining_pages = book.total_pages - total_pages_read
-         flash(f"You can only add up to {remaining_pages} more pages.", "danger")
-         return redirect(url_for('book_detail', book_id=book.id))
+    # Calculate total pages already read
+    total_pages_read = sum(progress.pages_read for progress in book.reading_progress)
 
-    new_total_pages_read_after_add = total_pages_read + pages_read
-    book_status_changed = False
-    if book.status != 'Completed' and book.total_pages > 0 and new_total_pages_read_after_add >= book.total_pages:
-        book.status = 'Completed'
-        book.current_page = book.total_pages 
-        if not book.end_date: 
-             book.end_date = datetime.utcnow()
-        book_status_changed = True
+    # Validate that pages_read does not exceed the remaining pages
+    if pages_read is not None:
+        remaining_pages = book.total_pages - total_pages_read
+        if book.total_pages > 0 and pages_read > remaining_pages:
+            flash(f"Cannot add progress. The current page ({pages_read}) exceeds the remaining pages of the book ({remaining_pages}).", "danger")
+            return redirect(url_for('book_detail', book_id=book.id))
 
+        if pages_read < 0:
+            flash("Cannot add progress. The current page cannot be negative.", "danger")
+            return redirect(url_for('book_detail', book_id=book.id))
+
+        # Update the current page
+        book.current_page = total_pages_read + pages_read
+
+        # Automatically set status to "In Progress" if it was "Dropped" and pages are added
+        if book.status == 'Dropped' and pages_read > 0:
+            book.status = 'In Progress'
+
+        # Automatically set status to "Completed" if current page equals total pages
+        if book.total_pages > 0 and book.current_page >= book.total_pages:
+            book.current_page = book.total_pages
+            book.status = 'Completed'
+
+    # Add a new reading progress entry
     progress = ReadingProgress(
         book_id=book.id,
         user_id=current_user.id,
@@ -810,3 +887,103 @@ def check_and_create_milestone_notifications(user):
         except Exception as e:
             db.session.rollback()
             application.logger.error(f"Error processing milestone '{key}' for user {user.id}: {e}", exc_info=True)
+@application.route('/book/<int:book_id>/change_status', methods=['POST'])
+def change_status(book_id):
+    book = Book.query.get_or_404(book_id)
+
+    # Ensure only the owner can change the status
+    if book.creator_id != current_user.id:
+        abort(403)
+
+    new_status = request.form.get('status')
+
+    # Prevent setting "Completed" if current page < total pages
+    if new_status == 'Completed' and book.current_page < book.total_pages:
+        flash("Cannot mark as 'Completed' because the current page is less than the total pages.", "danger")
+        return redirect(url_for('book_detail', book_id=book.id))
+
+    # Prevent changing status if the book is already completed
+    if book.status == 'Completed':
+        flash("Cannot change status because the book is already completed.", "danger")
+        return redirect(url_for('book_detail', book_id=book.id))
+
+    if new_status in ['Completed', 'Dropped', 'In Progress']:
+        book.status = new_status
+        db.session.commit()
+        flash(f"Book status updated to '{new_status}'.", "success")
+    else:
+        flash("Invalid status.", "danger")
+
+    return redirect(url_for('book_detail', book_id=book.id))
+
+
+@application.route('/book/<int:book_id>/toggle_favorite', methods=['POST'])
+def toggle_favorite(book_id):
+    book = Book.query.get_or_404(book_id)
+
+    # Ensure only the owner can toggle favorites
+    if book.creator_id != current_user.id:
+        abort(403)
+
+    # Toggle the is_favorite attribute
+    book.is_favorite = not book.is_favorite
+    db.session.commit()
+
+    if book.is_favorite:
+        flash("Book added to favorites.", "success")
+    else:
+        flash("Book removed from favorites.", "success")
+
+    return redirect(url_for('book_detail', book_id=book.id))
+
+
+@application.route('/book/<int:book_id>/toggle_public', methods=['POST'])
+def toggle_public(book_id):
+    book = Book.query.get_or_404(book_id)
+
+    # Ensure only the owner can toggle public/private status
+    if book.creator_id != current_user.id:
+        abort(403)
+
+    book.is_public = not book.is_public
+    db.session.commit()
+
+    if book.is_public:
+        flash("Book is now public.", "success")
+    else:
+        flash("Book is now private.", "success")
+
+    return redirect(url_for('book_detail', book_id=book.id))
+
+@application.route('/book/<int:book_id>/delete', methods=['POST'])
+def delete_book(book_id):
+    book = Book.query.get_or_404(book_id)
+
+    # Ensure only the owner can delete the book
+    if book.creator_id != current_user.id:
+        abort(403)
+
+    # Delete the book
+    db.session.delete(book)
+    db.session.commit()
+    flash("Book deleted successfully.", "success")
+
+    return redirect(url_for('index'))
+
+@application.route('/book/<int:book_id>/update_rating', methods=['POST'])
+def update_rating(book_id):
+    book = Book.query.get_or_404(book_id)
+
+    # Ensure only the owner can update the rating
+    if book.creator_id != current_user.id:
+        abort(403)
+
+    new_rating = request.form.get('rating', type=int)
+    if new_rating is not None and 0 <= new_rating <= 5:
+        book.rating = new_rating
+        db.session.commit()
+        flash("Book rating updated successfully.", "success")
+    else:
+        flash("Invalid rating value.", "danger")
+
+    return redirect(url_for('book_detail', book_id=book.id))
