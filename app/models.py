@@ -11,8 +11,9 @@ class User(UserMixin,db.Model):
     username: so.Mapped[str] = so.mapped_column(sa.String(64), index=True, unique=True)
     email: so.Mapped[str] = so.mapped_column(sa.String(120), index=True, unique=True)
     password_hash: so.Mapped[Optional[str]] = so.mapped_column(sa.String(256))
-    
+
     theme: so.Mapped[str] = so.mapped_column(sa.String(10), default='light', nullable=False)
+    profile_picture: so.Mapped[str] = so.mapped_column(sa.String(256), default='default_pfp.png')
 
     # Relationships
     books: so.Mapped[List["Book"]] = so.relationship(back_populates="creator", cascade="all, delete-orphan")
