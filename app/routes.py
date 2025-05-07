@@ -560,7 +560,28 @@ def revoke_share(share_id):
     try:
         user_shared_with = db.session.get(User, share_to_revoke.shared_with_user_id)
         username = user_shared_with.username if user_shared_with else "this user" 
+        # Create a notification for the user whose access is being revoked
+        book_id_of_revoked_share = share_to_revoke.book_id
+        receiver_id_of_notification = share_to_revoke.shared_with_user_id
+
         db.session.delete(share_to_revoke)
+        application.logger.info(f"Share record ID {share_id} deleted.")
+
+        expected_link = url_for('book_detail', book_id=book_id_of_revoked_share, _external=True)
+        
+        related_notification = Notification.query.filter_by(
+            receiver_id=receiver_id_of_notification,
+            type='share',
+            link=expected_link
+        ).first() 
+
+        if related_notification:
+            application.logger.info(f"Revoking share also deleting related 'share' notification ID: {related_notification.id} for receiver_id: {receiver_id_of_notification}, book_id: {book_id_of_revoked_share}")
+            db.session.delete(related_notification)
+        else:
+            # If no specific notification found, log the event
+            application.logger.info(f"No specific 'share' notification found to delete for share revoke targeting: receiver_id={receiver_id_of_notification}, book_id={book_id_of_revoked_share}, expected_link={expected_link}")
+
         db.session.commit()
         flash(f'Access revoked for {username}.', 'success')
     except Exception as e:
