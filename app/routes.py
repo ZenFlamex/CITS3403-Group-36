@@ -256,7 +256,12 @@ def upload_book():
 @application.route('/my_books')
 @login_required
 def my_books():
-    user_books = Book.query.filter_by(creator_id=current_user.id).all()
+    favourites_filter = request.args.get('favourites', '0') == '1'
+
+    if favourites_filter:
+        user_books = Book.query.filter_by(creator_id=current_user.id, is_favorite=True).all()
+    else:
+        user_books = Book.query.filter_by(creator_id=current_user.id).all()
 
     status_order = {'In Progress': 0, 'Completed': 1, 'Dropped': 2}
     user_books.sort(key=lambda b: status_order.get(b.status, 3))
@@ -268,7 +273,8 @@ def my_books():
     return render_template('my_books.html',
                             title="My Books",
                             current_books=user_books,
-                            view_mode=view_mode)
+                            view_mode=view_mode,
+                            filter_favourites=favourites_filter)
 
 @application.route('/profile')
 @login_required

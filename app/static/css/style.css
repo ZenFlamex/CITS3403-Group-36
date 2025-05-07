@@ -430,3 +430,24 @@ input[type="submit"]:active, .btn-primary[type="submit"]:active {
     font-size: 1rem;
     cursor: pointer;
   }
+
+/* --- Favourite Toggle Button Styles --- */
+#favouriteToggleBtn.btn-outline-warning:hover {
+    background-color: rgba(255, 193, 7, 0.15); /* Light transparent yellow on hover */
+    border-color: #ffc107;
+}
+
+#favouriteToggleBtn.btn-warning {
+    background-color: rgba(255, 193, 7, 0.3); /* Slightly transparent yellow fill */
+    border-color: #ffc107;
+}
+
+#favouriteToggleBtn .bi {
+    color: #ffc107; /* Star remains yellow */
+    position: relative;
+    z-index: 1; /* Ensure the star icon is above the background */
+}
+
+#favouriteToggleBtn:hover .bi {
+    color: #ffc107;
+}
