@@ -502,32 +502,41 @@ def share_book(book_id):
         return redirect(url_for('book_detail', book_id=book_id))
 
     try:
-        new_share = BookShare(book_id=book.id, shared_with_user_id=user_id_to_share_with)
+        new_share = BookShare(book_id=book.id, shared_with_user_id=user_to_share.id)
         db.session.add(new_share)
+
+        notification_text = f"{current_user.username} shared the book '{book.title}' with you."
+        notification_link = url_for('book_detail', book_id=book.id, _external=True)
+        direct_share_notification = Notification(
+            receiver_id=user_to_share.id,
+            sender_name=current_user.username,
+            type='share', 
+            text=notification_text,
+            link=notification_link
+        )
+        db.session.add(direct_share_notification)
         db.session.commit()
+        flash(f'Book successfully shared with {user_to_share.username}!', 'success')
 
         try:
-            notification_text = f"shared the book '{book.title}' with you."
-            notification_link = url_for('book_detail', book_id=book.id, _external=True) 
+            application.logger.debug(f"Calling milestone check for user {current_user.id} (sharer) after sharing a book.")
+            check_and_create_milestone_notifications(current_user)
+        except Exception as milestone_e_sharer: 
+            application.logger.error(f"Error during milestone check for sharer {current_user.id}: {milestone_e_sharer}", exc_info=True)
 
-            new_notification = Notification(
-                receiver_id=user_to_share.id,
-                sender_name=current_user.username, 
-                type='share', 
-                text=notification_text,
-                link=notification_link
-            )
-            db.session.add(new_notification)
-            db.session.commit()
-        except Exception as notify_error:
-            db.session.rollback() 
-            application.logger.error(f"Error creating notification for share (book {book_id} to user {user_id_to_share_with}): {notify_error}") 
-
-        flash(f'Book successfully shared with {user_to_share.username}!', 'success')
+        if user_to_share: 
+            try:
+                application.logger.debug(f"Calling milestone check for user {user_to_share.id} (receiver) after being shared a book.")
+                check_and_create_milestone_notifications(user_to_share)
+            except Exception as milestone_e_receiver:
+                application.logger.error(f"Error during milestone check for receiver {user_to_share.id}: {milestone_e_receiver}", exc_info=True)
+        else:
+            application.logger.warning(f"Could not perform milestone check for receiver; user_to_share object was None for ID {user_id_to_share_with}")
+    
     except Exception as e:
         db.session.rollback()
-        flash(f'Error sharing book, please try again later.', 'danger')
-        application.logger.error(f"Error sharing book {book_id} to user {user_id_to_share_with}: {e}")
+        flash(f'Error sharing book: {str(e)}', 'danger')
+        application.logger.error(f"Error sharing book {book_id} by user {current_user.id} to user ID {user_id_to_share_with}: {e}", exc_info=True)
 
     return redirect(url_for('book_detail', book_id=book_id))
 
