@@ -1,5 +1,5 @@
 from app import db, application
-from app.models import User, Book, Notification
+from app.models import User, Book, Notification, BookShare, ReadingProgress
 from datetime import datetime
 
 def seed_database():
@@ -7,6 +7,8 @@ def seed_database():
     
     # Clear existing data
     Notification.query.delete()
+    BookShare.query.delete() 
+    ReadingProgress.query.delete()
     Book.query.delete()
     User.query.delete()
     db.session.commit()

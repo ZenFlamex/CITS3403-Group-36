@@ -5,26 +5,27 @@
     <h1>{{ title }}</h1>
     <hr>
 
-    <div class="list-group">
+    <div class="list-group notification-list"> 
         {% if notifications %}
-        
             {% for notification in notifications %}
-              
-                <a href="{{ notification.link if notification.link else '#' }}"
-                   class="list-group-item list-group-item-action {% if not notification.is_read %}list-group-item-light {% else %}list-group-item-secondary text-muted{% endif %}"
-                   aria-current="{% if not notification.is_read %}true{% else %}false{% endif %}">
+                <a href="{{ notification.link if notification.link and notification.link != '#' else 'javascript:void(0);' }}" 
+                   class="list-group-item list-group-item-action notification-item {% if not notification.is_read %}list-group-item-light unread{% else %}list-group-item-secondary text-muted{% endif %}"
+                   aria-current="{% if not notification.is_read %}true{% else %}false{% endif %}"
+                   data-notification-id="{{ notification.id }}" 
+                   data-target-link="{{ notification.link if notification.link and notification.link != '#' else '' }}"> 
 
                     <div class="d-flex w-100 justify-content-between">
-                        
                         <span class="mb-1">
                             {% if not notification.is_read %}
-                            <span class="me-2 text-primary"><i class="bi bi-circle-fill" style="font-size: 0.5em;"></i></span> 
+                            <span class="me-2 text-primary unread-indicator"><i class="bi bi-circle-fill" style="font-size: 0.5em;"></i></span> {# Add class to indicator #}
                             {% else %}
-                            <span class="me-2" style="width: 0.5em; display: inline-block;"></span> 
+                            <span class="me-2" style="width: 0.5em; display: inline-block;"></span>
                             {% endif %}
-                
+
                             {% if notification.type == 'goal' %}
                                 <i class="bi bi-flag-fill me-2 text-primary" title="Goal Update"></i>
+                            {% elif notification.type == 'share' %} 
+                                <i class="bi bi-send-fill me-2 text-success" title="Book Shared"></i>
                             {% elif notification.type == 'friend' %}
                                 <i class="bi bi-people-fill me-2 text-info" title="Friend Activity"></i>
                             {% elif notification.type == 'comment' %}
@@ -41,7 +42,6 @@
                                {{ notification.text }}
                             {% endif %}
                         </span>
-                         
                         <small class="text-nowrap">
                             {{ notification.timestamp | datetimeformat }}
                         </small>
@@ -54,6 +54,5 @@
             </div>
         {% endif %}
     </div> {# End list-group #}
-
 </div> {# End container #}
 {% endblock %}

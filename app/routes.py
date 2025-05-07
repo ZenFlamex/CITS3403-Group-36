@@ -5,9 +5,11 @@ from datetime import datetime
 from app.forms import LoginForm, SignupForm, AccountSettingsForm, ThemeForm, DeleteAccountForm, BookUploadForm, ProfilePictureForm
 from flask_login import current_user, login_user, logout_user, login_required
 from urllib.parse import urlsplit
+from sqlalchemy import func
 from werkzeug.utils import secure_filename
 import requests
 import os
+
 
 #  Format a timestamp string into 'DD MonthName YYYY HH:MM' format.
 @application.template_filter('datetimeformat') 
@@ -22,27 +24,26 @@ def format_datetime_custom(value, format="%d %B %Y %H:%M"):
 
 @application.context_processor
 def inject_notifications():
-    recent_notifications = []
+    unread_notifications_for_dropdown = [] 
     unread_count = 0
     username = None
     
-    # Check if the user is logged in using Flask-Login's current_user
     if current_user.is_authenticated:
         username = current_user.username
         
-        user_notifications = Notification.query.filter_by(
-            receiver_id=current_user.id 
-        ).order_by(Notification.timestamp.desc()).limit(5).all() 
+        unread_notifications_for_dropdown = Notification.query.filter_by(
+            receiver_id=current_user.id,
+            is_read=False  
+        ).order_by(Notification.timestamp.desc()).limit(8).all() 
 
         unread_count = Notification.query.filter_by(
             receiver_id=current_user.id,
             is_read=False
         ).count()
-        recent_notifications = user_notifications 
 
     return {
-        'recent_notifications': recent_notifications,
-        'unread_count': unread_count,
+        'unread_notifications_for_dropdown': unread_notifications_for_dropdown, 
+        'unread_count': unread_count, 
         'username': username
     }
 
@@ -212,7 +213,7 @@ def upload_book():
                             cover_image = f"https://covers.openlibrary.org/b/id/{cover_id}-M.jpg"
             except Exception as e:
                 # Log the error but continue with default cover
-                print(f"Error fetching OpenLibrary data: {str(e)}")
+                application.logger.warning(f"Error fetching OpenLibrary data for '{openlibrary_id}': {str(e)}")
                 # We'll use the default cover image if there's an error
         
         # Create new book
@@ -232,12 +233,24 @@ def upload_book():
             end_date=form.end_date.data,
         )
         
-        db.session.add(new_book)
-        db.session.commit()
-        
-        flash('Book added successfully!', 'success')
-        return redirect(url_for('my_books'))
-        
+        try:
+            db.session.add(new_book)
+            db.session.commit() 
+            flash('Book added successfully!', 'success')
+
+            try:
+                application.logger.debug(f"Calling milestone check for user {current_user.id} after adding book.")
+                check_and_create_milestone_notifications(current_user)
+            except Exception as milestone_e:
+                application.logger.error(f"Error during milestone check after adding book for user {current_user.id}: {milestone_e}", exc_info=True)
+
+            return redirect(url_for('my_books')) 
+
+        except Exception as e:
+            db.session.rollback() 
+            flash(f"Error adding book: {str(e)}", "danger")
+            application.logger.error(f"Error adding book for user {current_user.id}: {e}", exc_info=True)
+   
     return render_template('upload_book.html', title='Add Book', form=form)
 
 @application.route('/my_books')
@@ -415,7 +428,7 @@ def notifications():
                            notifications=user_notifications) 
     
 
-# --- Route to Display Book Details --
+# --- Route to Display Book Details ---
 @application.route('/book/<int:book_id>')
 def book_detail(book_id):
     book = Book.query.get_or_404(book_id)
@@ -555,14 +568,41 @@ def share_book(book_id):
         return redirect(url_for('book_detail', book_id=book_id))
 
     try:
-        new_share = BookShare(book_id=book.id, shared_with_user_id=user_id_to_share_with)
+        new_share = BookShare(book_id=book.id, shared_with_user_id=user_to_share.id)
         db.session.add(new_share)
+
+        notification_text = f"{current_user.username} shared the book '{book.title}' with you."
+        notification_link = url_for('book_detail', book_id=book.id, _external=True)
+        direct_share_notification = Notification(
+            receiver_id=user_to_share.id,
+            sender_name=current_user.username,
+            type='share', 
+            text=notification_text,
+            link=notification_link
+        )
+        db.session.add(direct_share_notification)
         db.session.commit()
         flash(f'Book successfully shared with {user_to_share.username}!', 'success')
+
+        try:
+            application.logger.debug(f"Calling milestone check for user {current_user.id} (sharer) after sharing a book.")
+            check_and_create_milestone_notifications(current_user)
+        except Exception as milestone_e_sharer: 
+            application.logger.error(f"Error during milestone check for sharer {current_user.id}: {milestone_e_sharer}", exc_info=True)
+
+        if user_to_share: 
+            try:
+                application.logger.debug(f"Calling milestone check for user {user_to_share.id} (receiver) after being shared a book.")
+                check_and_create_milestone_notifications(user_to_share)
+            except Exception as milestone_e_receiver:
+                application.logger.error(f"Error during milestone check for receiver {user_to_share.id}: {milestone_e_receiver}", exc_info=True)
+        else:
+            application.logger.warning(f"Could not perform milestone check for receiver; user_to_share object was None for ID {user_id_to_share_with}")
+    
     except Exception as e:
         db.session.rollback()
-        flash(f'Error sharing book, please try again later.', 'danger')
-        application.logger.error(f"Error sharing book {book_id} to user {user_id_to_share_with}: {e}")
+        flash(f'Error sharing book: {str(e)}', 'danger')
+        application.logger.error(f"Error sharing book {book_id} by user {current_user.id} to user ID {user_id_to_share_with}: {e}", exc_info=True)
 
     return redirect(url_for('book_detail', book_id=book_id))
 
@@ -595,7 +635,28 @@ def revoke_share(share_id):
     try:
         user_shared_with = db.session.get(User, share_to_revoke.shared_with_user_id)
         username = user_shared_with.username if user_shared_with else "this user" 
+        # Create a notification for the user whose access is being revoked
+        book_id_of_revoked_share = share_to_revoke.book_id
+        receiver_id_of_notification = share_to_revoke.shared_with_user_id
+
         db.session.delete(share_to_revoke)
+        application.logger.info(f"Share record ID {share_id} deleted.")
+
+        expected_link = url_for('book_detail', book_id=book_id_of_revoked_share, _external=True)
+        
+        related_notification = Notification.query.filter_by(
+            receiver_id=receiver_id_of_notification,
+            type='share',
+            link=expected_link
+        ).first() 
+
+        if related_notification:
+            application.logger.info(f"Revoking share also deleting related 'share' notification ID: {related_notification.id} for receiver_id: {receiver_id_of_notification}, book_id: {book_id_of_revoked_share}")
+            db.session.delete(related_notification)
+        else:
+            # If no specific notification found, log the event
+            application.logger.info(f"No specific 'share' notification found to delete for share revoke targeting: receiver_id={receiver_id_of_notification}, book_id={book_id_of_revoked_share}, expected_link={expected_link}")
+
         db.session.commit()
         flash(f'Access revoked for {username}.', 'success')
     except Exception as e:
@@ -605,11 +666,11 @@ def revoke_share(share_id):
 
     return redirect(url_for('book_detail', book_id=book.id))
 
+
 @application.route('/book/<int:book_id>/add_progress', methods=['POST'])
+@login_required 
 def add_reading_progress(book_id):
     book = Book.query.get_or_404(book_id)
-
-    # Ensure only the owner can add progress
     if book.creator_id != current_user.id:
         abort(403)
 
@@ -649,10 +710,23 @@ def add_reading_progress(book_id):
         pages_read=pages_read,
         notes=notes
     )
-    db.session.add(progress)
-    db.session.commit()
 
-    flash("Reading progress added successfully!", "success")
+    try:
+        db.session.add(progress)
+        if book_status_changed:
+            db.session.add(book) 
+
+        db.session.commit() 
+        flash("Reading progress added successfully!", "success")
+
+        check_and_create_milestone_notifications(current_user)
+
+    except Exception as e:
+        db.session.rollback()
+        flash("Error saving reading progress.", "danger")
+        application.logger.error(f"Error adding reading progress for book {book_id} by user {current_user.id}: {e}", exc_info=True)
+
+
     return redirect(url_for('book_detail', book_id=book.id))
 
 @application.route('/book/<int:book_id>/delete_progress/<int:progress_id>', methods=['POST'])
@@ -660,7 +734,6 @@ def delete_reading_progress(book_id, progress_id):
     book = Book.query.get_or_404(book_id)
     progress = ReadingProgress.query.get_or_404(progress_id)
 
-    # Ensure only the owner can delete progress
     if book.creator_id != current_user.id:
         flash("You don't have permission to delete this progress entry.", "danger")
         return redirect(url_for('book_detail', book_id=book.id))
@@ -671,6 +744,144 @@ def delete_reading_progress(book_id, progress_id):
     flash("Reading progress entry deleted successfully!", "success")
     return redirect(url_for('book_detail', book_id=book.id))
 
+
+# --- API Route to Mark Notification as Read ---
+@application.route('/notifications/<int:notification_id>/read', methods=['POST'])
+@login_required
+def mark_notification_read(notification_id):
+    notification = db.session.get(Notification, notification_id)
+
+    # Check if notification exists
+    if not notification:
+        return jsonify({'success': False, 'message': 'Notification not found.'}), 404
+
+    # Check if the notification belongs to the current user
+    if notification.receiver_id != current_user.id:
+        return jsonify({'success': False, 'message': 'Forbidden.'}), 403
+
+    # Mark as read if it's not already
+    if not notification.is_read:
+        try:
+            notification.is_read = True
+            db.session.commit()
+
+            return jsonify({'success': True}), 200
+        except Exception as e:
+            db.session.rollback()
+            application.logger.error(f"Error marking notification {notification_id} as read: {e}")
+            return jsonify({'success': False, 'message': 'Database error.'}), 500
+    else:
+        return jsonify({'success': True}), 200
+
+def check_and_create_milestone_notifications(user):
+    if not user or not isinstance(user, User):
+        application.logger.warning("Invalid user passed to milestone check.")
+        return
+
+    application.logger.debug(f"Checking milestones for user {user.id} ({user.username})")
+
+    milestones = {
+        'first_book_added': {
+            'condition': lambda u: Book.query.filter_by(creator_id=u.id).count() >= 1,
+            'text': 'Bookshelf initiated! You successfully added your first book.',
+            'link': lambda: url_for('my_books', _external=True)
+        },
+        'first_book_completed': {
+            'condition': lambda u: Book.query.filter_by(creator_id=u.id, status='Completed').count() >= 1,
+            'text': 'First victory! Congratulations on completing your first book!',
+            'link': lambda: url_for('my_books', _external=True)
+        },
+
+        'completed_5_books': { 
+            'condition': lambda u: Book.query.filter_by(creator_id=u.id, status='Completed').count() >= 5,
+            'text': 'Reading enthusiast! You have completed 5 books!',
+            'link': lambda: url_for('my_books', _external=True)
+        },
+        'completed_10_books': { 
+            'condition': lambda u: Book.query.filter_by(creator_id=u.id, status='Completed').count() >= 10,
+            'text': 'Perfect ten! 10 books completed, keep it up!',
+            'link': lambda: url_for('my_books', _external=True)
+        },
+        'completed_25_books': { 
+            'condition': lambda u: Book.query.filter_by(creator_id=u.id, status='Completed').count() >= 25,
+            'text': 'Reading expert! 25 books completed, awesome!',
+            'link': lambda: url_for('my_books', _external=True)
+        },
+        'completed_50_books': {
+            'condition': lambda u: Book.query.filter_by(creator_id=u.id, status='Completed').count() >= 50,
+            'text': 'Reading master! 50 books completed, impressive!',
+            'link': lambda: url_for('my_books', _external=True)
+        },
+
+        'read_100_pages': { 
+            'condition': lambda u: (db.session.query(func.sum(ReadingProgress.pages_read))
+                                    .filter(ReadingProgress.user_id == u.id).scalar() or 0) >= 100,
+            'text': 'A journey of a thousand pages begins with a single step! You\'ve read over 100 pages!',
+            'link': lambda: url_for('stats', _external=True)
+        },
+        'read_1000_pages': { 
+            'condition': lambda u: (db.session.query(func.sum(ReadingProgress.pages_read))
+                                    .filter(ReadingProgress.user_id == u.id).scalar() or 0) >= 1000,
+            'text': 'Breaking a thousand! You\'ve read over 1000 pages!',
+            'link': lambda: url_for('stats', _external=True)
+        },
+        'read_5000_pages': {
+            'condition': lambda u: (db.session.query(func.sum(ReadingProgress.pages_read))
+                                    .filter(ReadingProgress.user_id == u.id).scalar() or 0) >= 5000,
+            'text': 'Page conqueror! Your reading volume has exceeded 5000 pages!',
+            'link': lambda: url_for('stats', _external=True)
+        },
+        'read_10000_pages': { 
+            'condition': lambda u: (db.session.query(func.sum(ReadingProgress.pages_read))
+                                    .filter(ReadingProgress.user_id == u.id).scalar() or 0) >= 10000,
+            'text': 'Breaking ten thousand! Your reading volume has exceeded 10,000 pages!',
+            'link': lambda: url_for('stats', _external=True)
+        },
+
+         'diverse_reader_3_genres': { 
+             'condition': lambda u: db.session.query(func.count(distinct(Book.genre))).filter(Book.creator_id == u.id).scalar() >= 3,
+             'text': 'Broad Tastes! You have added books from at least 3 different genres.',
+             'link': lambda: url_for('my_books', _external=True)
+    
+         },
+
+        'shared_first_book': {
+            'condition': lambda u: db.session.query(BookShare.id).join(Book, BookShare.book_id == Book.id).filter(Book.creator_id == u.id).count() >= 1,
+            'text': 'Sharing is caring! You shared your first book.',
+            'link': lambda: url_for('my_books', _external=True)
+        },
+         
+    }
+
+    for key, config in milestones.items():
+        try:
+            if config['condition'](user):
+                application.logger.debug(f"User {user.id} meets condition for milestone '{key}'")
+        
+                existing_notification = Notification.query.filter_by(
+                    receiver_id=user.id,
+                    type=key 
+                ).first()
+
+                if not existing_notification:
+                    application.logger.info(f"Milestone '{key}' reached by user {user.id} and not yet notified. Creating notification.")
+                    notification = Notification(
+                        receiver_id=user.id,
+                        sender_name='System',
+                        type=key,
+                        text=config['text'],
+                        link=config['link']() 
+                    )
+                    db.session.add(notification)
+                    db.session.commit() 
+                    application.logger.info(f"Milestone notification '{key}' successfully created for user {user.id}")
+
+                else:
+                     application.logger.debug(f"User {user.id} already notified for milestone '{key}'. Skipping.")
+
+        except Exception as e:
+            db.session.rollback()
+            application.logger.error(f"Error processing milestone '{key}' for user {user.id}: {e}", exc_info=True)
 @application.route('/book/<int:book_id>/change_status', methods=['POST'])
 def change_status(book_id):
     book = Book.query.get_or_404(book_id)
