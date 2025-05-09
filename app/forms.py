@@ -88,7 +88,7 @@ class BookUploadForm(FlaskForm):
     genre = SelectField('Genre', choices=[
         ('Fiction', 'Fiction'),
         ('Non-Fiction', 'Non-Fiction'),
-        ('Science Fiction', 'Science Fiction'),
+        ('Sci-Fi', 'Sci-Fi'),
         ('Fantasy', 'Fantasy'),
         ('Mystery', 'Mystery'),
         ('Romance', 'Romance'),

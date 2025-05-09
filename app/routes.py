@@ -5,7 +5,7 @@ from datetime import datetime
 from app.forms import LoginForm, SignupForm, AccountSettingsForm, ThemeForm, DeleteAccountForm, BookUploadForm, ProfilePictureForm
 from flask_login import current_user, login_user, logout_user, login_required
 from urllib.parse import urlsplit
-from sqlalchemy import func
+from sqlalchemy import func, distinct
 from werkzeug.utils import secure_filename
 import requests
 import os
@@ -86,7 +86,30 @@ def index():
         pages_read = sum(min(b.current_page, b.total_pages) for b in all_user_books)
         
         hours_read = 145  # Placeholder for hours read, to be calculated later     
-        goal_books = 50   # Will be set by the user in the future     
+        goal_books = 10   
+        
+        # Get distinct genres from completed books for the genre explorer challenge
+        completed_genres = db.session.query(Book.genre).filter(
+            Book.creator_id == current_user_id,
+            Book.status == 'Completed',
+            Book.genre.isnot(None),
+            Book.genre != ''
+        ).distinct().all()
+        
+        # Extract genre names from the query result
+        completed_genre_list = [genre[0] for genre in completed_genres]
+        
+        # Define the 5 genres for the challenge
+        genre_challenge_list = ['Fiction', 'Fantasy', 'Sci-Fi', 'Biography', 'History']
+        
+        # Create a dictionary to track completion status
+        genre_completion = {genre: genre in completed_genre_list for genre in genre_challenge_list}
+        
+        # Check if all 5 genres are completed
+        all_genres_completed = all(genre_completion.values())
+        
+        # Check if reading challenge is completed
+        reading_challenge_completed = completed_count >= goal_books
         
         return render_template(
             'index.html',
@@ -99,7 +122,11 @@ def index():
             pages_read=pages_read,
             hours_read=hours_read,
             completed_books=completed_count,
-            goal_books=goal_books
+            goal_books=goal_books,
+            genre_challenge_list=genre_challenge_list,
+            genre_completion=genre_completion,
+            all_genres_completed=all_genres_completed,
+            reading_challenge_completed=reading_challenge_completed
         )
     else:
         # User is not authenticated - show all public books
@@ -276,14 +303,44 @@ def my_books():
                             view_mode=view_mode,
                             filter_favourites=favourites_filter)
 
+def get_favorite_genre(user_id):
+    """
+    Calculate a user's favorite genre based on the books they've added.
+    If multiple genres have the same count, choose the one with the most recent book.
+    """
+    try:
+        # Query to get genres with their counts and newest book date
+        genre_stats = db.session.query(
+            Book.genre,
+            func.count(Book.id).label('count'),
+            func.max(Book.id).label('newest_book_id')  # Higher ID = more recent book
+        ).filter(
+            Book.creator_id == user_id
+        ).group_by(
+            Book.genre
+        ).order_by(
+            func.count(Book.id).desc(),  # First order by count
+            func.max(Book.id).desc()     # Then by newest book ID
+        ).first()
+        
+        if genre_stats:
+            return genre_stats.genre
+        return "No favorite yet"
+    except Exception as e:
+        application.logger.error(f"Error calculating favorite genre for user {user_id}: {e}")
+        return "Unknown"
+
+
 @application.route('/profile')
 @login_required
 def profile():
     recent_books = Book.query.filter_by(creator_id=current_user.id).limit(4).all() 
+    favorite_genre = get_favorite_genre(current_user.id)
     return render_template( 
         'profile.html',
         title='My Profile',
-        recent_books=recent_books
+        recent_books=recent_books,
+        favorite_genre=favorite_genre
     )
 
 ## Set up the upload folder and allowed file extensions for profile pictures
@@ -685,6 +742,8 @@ def add_reading_progress(book_id):
 
     # Calculate total pages already read
     total_pages_read = sum(progress.pages_read for progress in book.reading_progress)
+
+    book_status_changed = False
 
     # Validate that pages_read does not exceed the remaining pages
     if pages_read is not None:
