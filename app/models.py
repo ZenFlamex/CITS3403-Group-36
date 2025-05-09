@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 import sqlalchemy as sa
 import sqlalchemy.orm as so
@@ -14,6 +14,7 @@ class User(UserMixin,db.Model):
 
     theme: so.Mapped[str] = so.mapped_column(sa.String(10), default='light', nullable=False)
     profile_picture: so.Mapped[str] = so.mapped_column(sa.String(256), default='default_pfp.png')
+    join_date: so.Mapped[datetime] = so.mapped_column(sa.DateTime, default=lambda: datetime.now())
 
     # Relationships
     books: so.Mapped[List["Book"]] = so.relationship(back_populates="creator", cascade="all, delete-orphan")
@@ -87,7 +88,7 @@ class Notification(db.Model):
     type: so.Mapped[str] = so.mapped_column(sa.String(20))
     is_read: so.Mapped[bool] = so.mapped_column(sa.Boolean, default=False)
     text: so.Mapped[str] = so.mapped_column(sa.String(500))
-    timestamp: so.Mapped[datetime] = so.mapped_column(sa.DateTime, default=datetime.utcnow)
+    timestamp: so.Mapped[datetime] = so.mapped_column(sa.DateTime, default=lambda: datetime.now())
     link: so.Mapped[str] = so.mapped_column(sa.String(200), default='#')
     
     # Relationships
@@ -103,7 +104,7 @@ class BookShare(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     book_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('book.id', ondelete='CASCADE'), index=True)
     shared_with_user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('user.id', ondelete='CASCADE'), index=True)
-    shared_at: so.Mapped[datetime] = so.mapped_column(default=datetime.utcnow)
+    timestamp: so.Mapped[datetime] = so.mapped_column(sa.DateTime, default=lambda: datetime.now())
     book: so.Mapped["Book"] = so.relationship(back_populates="shares_granted")
     shared_with_user: so.Mapped["User"] = so.relationship(back_populates="shares_received_access")
 

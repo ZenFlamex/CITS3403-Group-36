@@ -14,27 +14,99 @@
         </div>
     </div>
 
-    <!-- Reading Stats Summary -->
-    <div class="row mb-4">
+    <!-- Combined Stats and Challenges Container -->
+    <div class="row mb-3">
         <div class="col-md-12">
             <div class="card border-0 bg-light">
                 <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-3">
-                            <h3 class="reading-stat">{{ reading_count }}</h3>
-                            <p class="text-muted">Currently Reading</p>
+                    <div class="mb-4">
+                        <h3 id="stats-section-title">
+                            <i class="bi bi-bar-chart-fill me-2"></i>Reading Stats
+                        </h3>
+                    </div>
+                    
+                    <!-- Stats Content Wrapper -->
+                    <div id="stats-content-wrapper" class="position-relative">
+                        <div id="reading-stats" class="stats-content active">
+                            <div class="row text-center position-relative">
+                                <div class="col-md-3">
+                                    <h3 class="reading-stat">{{ reading_count }}</h3>
+                                    <p class="text-muted">Currently Reading</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <h3 class="reading-stat">{{ completed_count }}</h3>
+                                    <p class="text-muted">Completed</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <h3 class="reading-stat">{{ pages_read }}</h3>
+                                    <p class="text-muted">Pages Read</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <h3 class="reading-stat">{{ hours_read }}</h3>
+                                    <p class="text-muted">Hours Read</p>
+                                </div>
+                                
+                                <button class="btn btn-sm btn-outline-secondary navigation-btn next-btn" id="next-stats-section">
+                                    <i class="bi bi-arrow-right"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div class="col-md-3">
-                            <h3 class="reading-stat">{{ completed_count }}</h3>
-                            <p class="text-muted">Completed</p>
-                        </div>
-                        <div class="col-md-3">
-                            <h3 class="reading-stat">{{ pages_read }}</h3>
-                            <p class="text-muted">Pages Read</p>
-                        </div>
-                        <div class="col-md-3">
-                            <h3 class="reading-stat">{{ hours_read }}</h3>
-                            <p class="text-muted">Hours Read</p>
+                        
+                        <!-- Reading Challenges Section -->
+                        <div id="reading-challenges" class="stats-content">
+                            <div class="row position-relative">
+                                <div class="col-md-6">
+                                    <div class="card h-100 border-0">
+                                        <div class="card-body">
+                                            <h5 class="d-flex align-items-center">
+                                                <i class="bi bi-trophy-fill text-warning me-2"></i>2025 Reading Challenge
+                                                {% if reading_challenge_completed %}
+                                                <span class="ms-2 badge bg-success rounded-circle">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </span>
+                                                {% endif %}
+                                            </h5>
+                                            <div class="progress mt-3 mb-2" style="height: 10px;">
+                                                <div class="progress-bar bg-success" role="progressbar" 
+                                                    style="width: {{ (completed_books / goal_books) * 100 if goal_books > 0 else 0 }}%;" 
+                                                    aria-valuenow="{{ completed_books }}" 
+                                                    aria-valuemin="0" 
+                                                    aria-valuemax="{{ goal_books }}">
+                                                </div>
+                                            </div>
+                                            <p class="text-muted">{{ completed_books }} of {{ goal_books }} books</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100 border-0">
+                                        <div class="card-body">
+                                            <h5 class="d-flex align-items-center">
+                                                <i class="bi bi-journals text-primary me-2"></i>Genre Explorer
+                                                {% if all_genres_completed %}
+                                                <span class="ms-2 badge bg-success rounded-circle">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </span>
+                                                {% endif %}
+                                            </h5>
+                                            <p class="text-muted mb-2">Read books from 5 different genres this year</p>
+                                            <div class="d-flex flex-wrap">
+                                                {% for genre in genre_challenge_list %}
+                                                    {% if genre_completion[genre] %}
+                                                        <span class="badge bg-success m-1">{{ genre }}</span>
+                                                    {% else %}
+                                                        <span class="badge bg-light text-dark m-1">{{ genre }}</span>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button class="btn btn-sm btn-outline-secondary navigation-btn prev-btn" id="prev-stats-section">
+                                    <i class="bi bi-arrow-left"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -143,39 +215,6 @@
             {% endif %}
         </div>
     </div>
-
-    <!-- Reading Challenges Section -->
-    <div class="book-section mb-5">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3><i class="bi bi-trophy me-2"></i>Reading Challenges</h3>
-            <a href="#" class="text-decoration-none">View All</a>
-        </div>
-        <div class="row">
-            <div class="col-md-6">
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <h5>2025 Reading Challenge</h5>
-                        <p class="text-muted">{{ completed_books }} of {{ goal_books }} books</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <h5>Genre Explorer</h5>
-                        <p class="text-muted">Read books from 5 different genres this year</p>
-                        <div class="d-flex flex-wrap">
-                            <span class="badge bg-success m-1">Fiction</span>
-                            <span class="badge bg-success m-1">Fantasy</span>
-                            <span class="badge bg-light text-dark m-1">Sci-Fi</span>
-                            <span class="badge bg-light text-dark m-1">Biography</span>
-                            <span class="badge bg-light text-dark m-1">History</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 {% else %}
     <!-- Not logged in view -->
     <div class="row mb-5">
@@ -265,4 +304,215 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Script to handle toggling between reading stats and challenges
+document.addEventListener('DOMContentLoaded', function() {
+    const prevButton = document.getElementById('prev-stats-section');
+    const nextButton = document.getElementById('next-stats-section');
+    const sectionTitle = document.getElementById('stats-section-title');
+    const readingStats = document.getElementById('reading-stats');
+    const readingChallenges = document.getElementById('reading-challenges');
+    
+    // Initially show reading stats and hide challenges
+    readingStats.classList.add('active');
+    readingChallenges.classList.remove('active');
+    
+    let isAnimating = false;
+    
+    // Function to switch to challenges view
+    function showChallenges() {
+        if (isAnimating) return;
+        isAnimating = true;
+        
+        // Apply slide-left-out animation to stats
+        readingStats.classList.add('slide-left-out');
+        
+        // Fade out title
+        sectionTitle.classList.add('changing');
+        
+        setTimeout(() => {
+            // After slide out, swap visibility
+            readingStats.classList.remove('active', 'slide-left-out');
+            readingChallenges.classList.add('active');
+            
+            // Update title
+            sectionTitle.innerHTML = '<i class="bi bi-trophy me-2"></i>Reading Challenges';
+            setTimeout(() => {
+                sectionTitle.classList.remove('changing');
+            }, 100);
+            
+            // Apply slide-left-in animation to challenges
+            setTimeout(() => {
+                readingChallenges.classList.add('slide-left-in');
+                setTimeout(() => {
+                    readingChallenges.classList.remove('slide-left-in');
+                    isAnimating = false;
+                }, 400);
+            }, 50);
+        }, 300);
+    }
+    
+    // Function to switch to stats view
+    function showStats() {
+        if (isAnimating) return;
+        isAnimating = true;
+        
+        // Apply slide-right-out animation to challenges
+        readingChallenges.classList.add('slide-right-out');
+        
+        // Fade out title
+        sectionTitle.classList.add('changing');
+        
+        setTimeout(() => {
+            // After slide out, swap visibility
+            readingChallenges.classList.remove('active', 'slide-right-out');
+            readingStats.classList.add('active');
+            
+            // Update title
+            sectionTitle.innerHTML = '<i class="bi bi-bar-chart-fill me-2"></i>Reading Stats';
+            setTimeout(() => {
+                sectionTitle.classList.remove('changing');
+            }, 100);
+            
+            // Apply slide-right-in animation to stats
+            setTimeout(() => {
+                readingStats.classList.add('slide-right-in');
+                setTimeout(() => {
+                    readingStats.classList.remove('slide-right-in');
+                    isAnimating = false;
+                }, 400);
+            }, 50);
+        }, 300);
+    }
+    
+    // Event listeners for arrow buttons
+    prevButton.addEventListener('click', showStats);
+    nextButton.addEventListener('click', showChallenges);
+});
+</script>
+<style>
+/* Stats toggle functionality with improved transitions */
+.stats-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s;
+}
+
+.stats-content.active {
+    opacity: 1;
+    visibility: visible;
+    position: relative;
+}
+
+/* Directional slide animations */
+.slide-left-out {
+    animation: slideLeftOut 0.3s forwards;
+}
+
+.slide-left-in {
+    animation: slideLeftIn 0.4s forwards;
+}
+
+.slide-right-out {
+    animation: slideRightOut 0.3s forwards;
+}
+
+.slide-right-in {
+    animation: slideRightIn 0.4s forwards;
+}
+
+@keyframes slideLeftOut {
+    0% { opacity: 1; transform: translateX(0); }
+    100% { opacity: 0; transform: translateX(-30px); }
+}
+
+@keyframes slideLeftIn {
+    0% { opacity: 0; transform: translateX(30px); }
+    100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideRightOut {
+    0% { opacity: 1; transform: translateX(0); }
+    100% { opacity: 0; transform: translateX(30px); }
+}
+
+@keyframes slideRightIn {
+    0% { opacity: 0; transform: translateX(-30px); }
+    100% { opacity: 1; transform: translateX(0); }
+}
+
+/* Added card styles for challenges section */
+#reading-challenges .card {
+    background-color: transparent;
+    box-shadow: none;
+}
+
+/* Navigation button styles */
+.navigation-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    z-index: 5;
+}
+
+.navigation-btn:hover {
+    background-color: #e9ecef;
+    transform: translateY(-50%) scale(1.1);
+}
+
+.next-btn {
+    right: -20px; 
+}
+
+.prev-btn {
+    left: -20px; 
+}
+
+#stats-content-wrapper {
+    min-height: 200px; 
+    position: relative;
+    overflow: visible; 
+    padding: 0 25px;
+    display: flex;
+    align-items: stretch; 
+}
+
+/* Brand color for navigation buttons on hover */
+.navigation-btn:hover {
+    background-color: rgba(251, 113, 42, 0.1);
+    border-color: #FB712A;
+    color: #FB712A;
+}
+
+#stats-section-title {
+    transition: opacity 0.2s ease;
+}
+
+#stats-section-title.changing {
+    opacity: 0;
+}
+
+#reading-stats .row {
+    width: 100%;
+    height: 75%;
+    align-items: center;
+}
+
+</style>
 {% endblock %}

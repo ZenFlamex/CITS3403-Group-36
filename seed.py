@@ -1,48 +1,78 @@
 from app import db, application
-from app.models import User, Book, Notification, BookShare, ReadingProgress
-from datetime import datetime
+from app.models import User, Book, ReadingProgress
+from datetime import datetime, timezone
 
 def seed_database():
     print("Seeding database...")
     
-    # Clear existing data
-    Notification.query.delete()
-    BookShare.query.delete() 
+    # Clear existing data in reverse dependency order
+    print("Clearing existing data...")
     ReadingProgress.query.delete()
     Book.query.delete()
     User.query.delete()
     db.session.commit()
     
-    # Create users - Simulates user signup process
-    def create_user(username, email, password):
-        """Simulate user creation through signup form"""
-        # This would normally include password hashing
+    # Create users with join_date
+    def create_user(username, email, password, join_date=None):
+        """Create a user with specified join date"""
+        if join_date is None:
+            join_date = datetime.now(timezone.utc)
+            
         user = User(
             username=username,
             email=email,
+            join_date=join_date
         )
         user.set_password(password)
         db.session.add(user)
         db.session.flush()  # Get ID before committing
         return user
    
-    bookworm = create_user('bookworm', 'bookworm@example.com', 'password123')
+    print("Creating users...")
+    # Create users with different join dates to test features
+    bookworm = create_user(
+        'bookworm', 
+        'bookworm@example.com', 
+        'password123',
+        datetime.strptime('2025-01-10 12:00:00', '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
+    )
     
-    # Additional users
-    wizardfan01 = create_user('wizardfan01', 'wizardfan01@example.com', 'password456')
-    scifibro = create_user('scifibro', 'scifibro@example.com', 'password789')
-    readingjourney = create_user('readingjourney', 'readingjourney@example.com', 'passwordabc')
-    galactic42 = create_user('galactic42', 'galactic42@example.com', 'passworddef')
-    literarylion = create_user('literarylion', 'literarylion@example.com', 'passwordghi')
+    wizardfan = create_user(
+        'wizardfan', 
+        'wizardfan@example.com', 
+        'passwordabc',  # Updated password for wizardfan
+        datetime.strptime('2025-02-15 14:30:00', '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
+    )
+    
+    scifibro = create_user(
+        'scifibro', 
+        'scifibro@example.com', 
+        'simple123',  # Simple password
+        datetime.strptime('2025-03-20 09:15:00', '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
+    )
+    
+    literarylion = create_user(
+        'literarylion', 
+        'literarylion@example.com', 
+        'simple123',  # Simple password
+        datetime.strptime('2025-04-05 16:45:00', '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
+    )
+    
+    mysterymaven = create_user(
+        'mysterymaven', 
+        'mysterymaven@example.com', 
+        'simple123',  # Simple password
+        datetime.strptime('2025-04-20 10:30:00', '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
+    )
     
     db.session.commit()
     print("Users created successfully")
     
-    # Function to simulate adding a book through a form
-    def add_book(title, author, cover_image, creator, genre="Fiction", rating=0, status="In Progress", 
-                 current_page=0, total_pages=0, is_favorite=False, is_public=False,
-                 start_date=None, end_date=None):
-        """Simulate adding a book through a form submission"""
+    # Function to add books
+    def add_book(title, author, cover_image, creator, genre, rating=0, status="In Progress", 
+                current_page=0, total_pages=0, is_favorite=False, is_public=False,
+                start_date=None, end_date=None):
+        """Add a book to the database"""
         book = Book(
             title=title,
             author=author,
@@ -59,10 +89,31 @@ def seed_database():
             end_date=end_date
         )
         db.session.add(book)
+        db.session.flush()
         return book
     
-    # Add books for bookworm user
-    add_book(
+    print("Creating books...")
+    
+    # Books for bookworm - one for each genre as specified
+    # 1. Fiction book
+    book_fiction = add_book(
+        'To Kill a Mockingbird', 
+        'Harper Lee', 
+        'https://covers.openlibrary.org/b/isbn/9780061120084-L.jpg',
+        bookworm, 
+        genre='Fiction',
+        rating=4, 
+        status='Completed', 
+        current_page=281, 
+        total_pages=281, 
+        is_favorite=True, 
+        is_public=True,
+        start_date=datetime.strptime('2025-01-20', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-02-05', '%Y-%m-%d')
+    )
+    
+    # 2. Fantasy book
+    book_fantasy = add_book(
         'Red Queen', 
         'Victoria Aveyard', 
         'https://covers.openlibrary.org/b/isbn/9780062310637-L.jpg',
@@ -78,91 +129,79 @@ def seed_database():
         end_date=datetime.strptime('2025-02-10', '%Y-%m-%d')
     )
     
-    add_book(
-        'Glass Sword', 
-        'Victoria Aveyard', 
-        'https://covers.openlibrary.org/b/isbn/9780062310668-L.jpg',
+    # 3. Sci-Fi book - in progress, 20 pages from completion
+    book_scifi = add_book(
+        'The Martian', 
+        'Andy Weir', 
+        'https://covers.openlibrary.org/b/isbn/9780553418026-L.jpg',
         bookworm, 
-        genre='Fantasy',
-        rating=3, 
-        status='Completed', 
-        current_page=350, 
-        total_pages=350, 
-        is_favorite=True, 
+        genre='Sci-Fi',
+        rating=0, 
+        status='In Progress', 
+        current_page=349, 
+        total_pages=369,  # 20 pages from completion
+        is_favorite=False, 
         is_public=False,
-        start_date=datetime.strptime('2025-02-15', '%Y-%m-%d'),
-        end_date=datetime.strptime('2025-03-10', '%Y-%m-%d')
+        start_date=datetime.strptime('2025-05-01', '%Y-%m-%d')
     )
     
-    add_book(
-        'King\'s Cage', 
-        'Victoria Aveyard', 
-        'https://covers.openlibrary.org/b/isbn/9780062310712-L.jpg',
+    # 4. Biography book
+    book_biography = add_book(
+        'Steve Jobs', 
+        'Walter Isaacson', 
+        'https://covers.openlibrary.org/b/isbn/9781451648539-L.jpg',
         bookworm, 
-        genre='Fantasy',
-        rating=4, 
+        genre='Biography',
+        rating=3, 
         status='Completed', 
-        current_page=380, 
-        total_pages=380, 
+        current_page=656, 
+        total_pages=656, 
+        is_favorite=False, 
+        is_public=True,
+        start_date=datetime.strptime('2025-02-10', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-03-15', '%Y-%m-%d')
+    )
+    
+    # 5. History book
+    book_history = add_book(
+        'Sapiens: A Brief History of Humankind', 
+        'Yuval Noah Harari', 
+        'https://covers.openlibrary.org/b/isbn/9780062316097-L.jpg',
+        bookworm, 
+        genre='History',
+        rating=5, 
+        status='Completed', 
+        current_page=443, 
+        total_pages=443, 
         is_favorite=True, 
-        is_public=False,
-        start_date=datetime.strptime('2025-03-15', '%Y-%m-%d'),
+        is_public=True,
+        start_date=datetime.strptime('2025-03-20', '%Y-%m-%d'),
         end_date=datetime.strptime('2025-04-10', '%Y-%m-%d')
     )
     
-    add_book(
-        'War Storm', 
-        'Victoria Aveyard', 
-        'https://covers.openlibrary.org/b/isbn/9780062842718-L.jpg',
+    # 6. Another Fantasy book
+    book_fantasy2 = add_book(
+        'Six of Crows', 
+        'Leigh Bardugo', 
+        'https://covers.openlibrary.org/b/isbn/9781627792127-L.jpg',
         bookworm, 
         genre='Fantasy',
-        rating=0,  # Not rated yet
-        status='In Progress', 
-        current_page=235, 
-        total_pages=502, 
-        is_favorite=False, 
-        is_public=False,
-        start_date=datetime.strptime('2025-04-15', '%Y-%m-%d')
-    )
-    
-    add_book(
-        'Broken Throne', 
-        'Victoria Aveyard', 
-        'https://covers.openlibrary.org/b/isbn/9780062423023-L.jpg',
-        bookworm, 
-        genre='Fantasy',
-        rating=3, 
+        rating=5, 
         status='Completed', 
-        current_page=400, 
-        total_pages=400, 
-        is_favorite=False, 
+        current_page=465, 
+        total_pages=465, 
+        is_favorite=True, 
         is_public=True,
-        start_date=datetime.strptime('2025-05-15', '%Y-%m-%d'),
-        end_date=datetime.strptime('2025-06-10', '%Y-%m-%d')
+        start_date=datetime.strptime('2025-04-20', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-05-10', '%Y-%m-%d')
     )
     
-    add_book(
-        'Cruel Crown', 
-        'Victoria Aveyard', 
-        'https://covers.openlibrary.org/b/isbn/9780062435347-L.jpg',
-        bookworm, 
-        genre='Fantasy',
-        rating=2, 
-        status='Dropped', 
-        current_page=45, 
-        total_pages=208, 
-        is_favorite=False, 
-        is_public=False,
-        start_date=datetime.strptime('2025-06-15', '%Y-%m-%d'),
-        end_date=datetime.strptime('2025-07-10', '%Y-%m-%d')
-    )
-    
-    # Add books for other users
-    add_book(
+    # Books for wizardfan - Harry Potter series
+    hp1 = add_book(
         'Harry Potter and the Philosopher\'s Stone', 
         'J.K. Rowling', 
         'https://covers.openlibrary.org/b/isbn/9780747532699-L.jpg',
-        wizardfan01, 
+        wizardfan, 
         genre='Fantasy',
         rating=5, 
         status='Completed', 
@@ -170,158 +209,208 @@ def seed_database():
         total_pages=223, 
         is_favorite=True, 
         is_public=True,
-        start_date=datetime.strptime('2025-01-01', '%Y-%m-%d'),
-        end_date=datetime.strptime('2025-01-20', '%Y-%m-%d')
+        start_date=datetime.strptime('2025-02-20', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-03-01', '%Y-%m-%d')
     )
     
-    add_book(
-        'The Martian', 
-        'Andy Weir', 
-        'https://covers.openlibrary.org/b/isbn/9780804139021-L.jpg',
-        scifibro, 
-        genre='Science Fiction',
-        rating=5, 
-        status='Completed', 
-        current_page=387, 
-        total_pages=387, 
-        is_favorite=True, 
-        is_public=True,
-        start_date=datetime.strptime('2025-02-01', '%Y-%m-%d'),
-        end_date=datetime.strptime('2025-02-20', '%Y-%m-%d')
-    )
-    
-    add_book(
-        'The Hunger Games', 
-        'Suzanne Collins', 
-        'https://covers.openlibrary.org/b/isbn/9780439023481-L.jpg',
-        readingjourney, 
-        genre='Science Fiction',
-        rating=5, 
-        status='Completed', 
-        current_page=384, 
-        total_pages=384, 
-        is_favorite=True, 
-        is_public=True,
-        start_date=datetime.strptime('2025-03-01', '%Y-%m-%d'),
-        end_date=datetime.strptime('2025-03-20', '%Y-%m-%d')
-    )
-    
-    add_book(
-        'A Court of Thorns and Roses', 
-        'Sarah J. Maas', 
-        'https://covers.openlibrary.org/b/isbn/9781619634442-L.jpg',
-        galactic42, 
-        genre='Romance',
-        rating=5, 
-        status='Completed', 
-        current_page=416, 
-        total_pages=416, 
-        is_favorite=True, 
-        is_public=True,
-        start_date=datetime.strptime('2025-04-01', '%Y-%m-%d'),
-        end_date=datetime.strptime('2025-04-20', '%Y-%m-%d')
-    )
-    
-    add_book(
-        'Throne of Glass', 
-        'Sarah J. Maas', 
-        'https://covers.openlibrary.org/b/isbn/9781619630345-L.jpg',
-        literarylion, 
+    hp2 = add_book(
+        'Harry Potter and the Chamber of Secrets', 
+        'J.K. Rowling', 
+        'https://covers.openlibrary.org/b/isbn/9780747538486-L.jpg',
+        wizardfan, 
         genre='Fantasy',
         rating=4, 
         status='Completed', 
-        current_page=404, 
-        total_pages=404, 
+        current_page=251, 
+        total_pages=251, 
+        is_favorite=False, 
+        is_public=True,
+        start_date=datetime.strptime('2025-03-05', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-03-15', '%Y-%m-%d')
+    )
+    
+    hp3 = add_book(
+        'Harry Potter and the Prisoner of Azkaban', 
+        'J.K. Rowling', 
+        'https://covers.openlibrary.org/b/isbn/9780747546290-L.jpg',
+        wizardfan, 
+        genre='Fantasy',
+        rating=5, 
+        status='Completed', 
+        current_page=317, 
+        total_pages=317, 
         is_favorite=True, 
         is_public=True,
-        start_date=datetime.strptime('2025-05-01', '%Y-%m-%d'),
-        end_date=datetime.strptime('2025-05-20', '%Y-%m-%d')
+        start_date=datetime.strptime('2025-03-20', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-04-05', '%Y-%m-%d')
+    )
+    
+    hp4 = add_book(
+        'Harry Potter and the Goblet of Fire', 
+        'J.K. Rowling', 
+        'https://covers.openlibrary.org/b/isbn/9780747550990-L.jpg',
+        wizardfan, 
+        genre='Fantasy',
+        rating=0, 
+        status='In Progress', 
+        current_page=300, 
+        total_pages=636, 
+        is_favorite=False, 
+        is_public=True,
+        start_date=datetime.strptime('2025-05-01', '%Y-%m-%d')
+    )
+    
+    # Books for scifibro
+    scifi1 = add_book(
+        'Dune', 
+        'Frank Herbert', 
+        'https://covers.openlibrary.org/b/isbn/9780441172719-L.jpg',
+        scifibro, 
+        genre='Sci-Fi',
+        rating=5, 
+        status='Completed', 
+        current_page=658, 
+        total_pages=658, 
+        is_favorite=True, 
+        is_public=True,
+        start_date=datetime.strptime('2025-03-25', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-04-20', '%Y-%m-%d')
+    )
+    
+    scifi2 = add_book(
+        'Foundation', 
+        'Isaac Asimov', 
+        'https://covers.openlibrary.org/b/isbn/9780553293357-L.jpg',
+        scifibro, 
+        genre='Sci-Fi',
+        rating=4, 
+        status='Completed', 
+        current_page=244, 
+        total_pages=244, 
+        is_favorite=False, 
+        is_public=True,
+        start_date=datetime.strptime('2025-04-25', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-05-05', '%Y-%m-%d')
+    )
+    
+    scifi3 = add_book(
+        'Neuromancer', 
+        'William Gibson', 
+        'https://covers.openlibrary.org/b/isbn/9780441569595-L.jpg',
+        scifibro, 
+        genre='Sci-Fi',
+        rating=0, 
+        status='In Progress', 
+        current_page=150, 
+        total_pages=271, 
+        is_favorite=False, 
+        is_public=False,
+        start_date=datetime.strptime('2025-05-07', '%Y-%m-%d')
+    )
+    
+    # Books for literarylion
+    lit1 = add_book(
+        'Pride and Prejudice', 
+        'Jane Austen', 
+        'https://covers.openlibrary.org/b/isbn/9780141439518-L.jpg',
+        literarylion, 
+        genre='Classic',
+        rating=5, 
+        status='Completed', 
+        current_page=432, 
+        total_pages=432, 
+        is_favorite=True, 
+        is_public=True,
+        start_date=datetime.strptime('2025-04-10', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-04-30', '%Y-%m-%d')
+    )
+    
+    lit2 = add_book(
+        'Jane Eyre', 
+        'Charlotte Brontë', 
+        'https://covers.openlibrary.org/b/isbn/9780141441146-L.jpg',
+        literarylion, 
+        genre='Classic',
+        rating=4, 
+        status='Completed', 
+        current_page=507, 
+        total_pages=507, 
+        is_favorite=False, 
+        is_public=True,
+        start_date=datetime.strptime('2025-03-15', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-04-05', '%Y-%m-%d')
+    )
+    
+    lit3 = add_book(
+        'The Great Gatsby', 
+        'F. Scott Fitzgerald', 
+        'https://covers.openlibrary.org/b/isbn/9780743273565-L.jpg',
+        literarylion, 
+        genre='Classic',
+        rating=0, 
+        status='In Progress', 
+        current_page=100, 
+        total_pages=180, 
+        is_favorite=False, 
+        is_public=True,
+        start_date=datetime.strptime('2025-05-05', '%Y-%m-%d')
+    )
+    
+    # Books for mysterymaven
+    mys1 = add_book(
+        'The Girl with the Dragon Tattoo', 
+        'Stieg Larsson', 
+        'https://covers.openlibrary.org/b/isbn/9780307269751-L.jpg',
+        mysterymaven, 
+        genre='Mystery',
+        rating=4, 
+        status='Completed', 
+        current_page=672, 
+        total_pages=672, 
+        is_favorite=True, 
+        is_public=True,
+        start_date=datetime.strptime('2025-04-25', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-05-15', '%Y-%m-%d')
+    )
+    
+    mys2 = add_book(
+        'Gone Girl', 
+        'Gillian Flynn', 
+        'https://covers.openlibrary.org/b/isbn/9780307588371-L.jpg',
+        mysterymaven, 
+        genre='Mystery',
+        rating=5, 
+        status='Completed', 
+        current_page=432, 
+        total_pages=432, 
+        is_favorite=True, 
+        is_public=True,
+        start_date=datetime.strptime('2025-03-10', '%Y-%m-%d'),
+        end_date=datetime.strptime('2025-03-25', '%Y-%m-%d')
     )
     
     db.session.commit()
     print("Books created successfully")
     
-    # Function to simulate notification creation
-    def create_notification(receiver, sender_name, notification_type, text, timestamp=None, is_read=False, link='#'):
-        """Simulate creating a notification as would happen in the application"""
-        if timestamp is None:
-            timestamp = datetime.utcnow()
-            
-        notification = Notification(
-            receiver_id=receiver.id,
-            sender_name=sender_name,
-            type=notification_type,
-            text=text,
-            timestamp=timestamp,
-            is_read=is_read,
-            link=link
+    # Add reading progress data for milestone tracking
+    print("Creating reading progress entries...")
+    
+    def add_progress(book, user, pages_read, notes=""):
+        progress = ReadingProgress(
+            book_id=book.id,
+            user_id=user.id,
+            pages_read=pages_read,
+            notes=notes
         )
-        db.session.add(notification)
-        return notification
+        db.session.add(progress)
+        return progress
     
-    # Create notifications for bookworm
-    create_notification(
-        bookworm, 'system', 'goal', 'You updated your annual goal to 50 books!',
-        datetime.strptime('2025-04-20 10:00:00', '%Y-%m-%d %H:%M:%S')
-    )
-    
-    create_notification(
-        bookworm, 'ZenFlame', 'friend', "added 'Red Queen' to their shelf.",
-        datetime.strptime('2025-04-21 09:30:00', '%Y-%m-%d %H:%M:%S')
-    )
-    
-    create_notification(
-        bookworm, 'bre', 'comment', "commented on your review of 'War Storm'.",
-        datetime.strptime('2025-04-19 15:00:00', '%Y-%m-%d %H:%M:%S'),
-        is_read=True
-    )
-    
-    create_notification(
-        bookworm, 'Jake', 'friend', "finished reading 'Glass Sword'.",
-        datetime.strptime('2025-04-22 14:15:00', '%Y-%m-%d %H:%M:%S')
-    )
-    
-    create_notification(
-        bookworm, 'system', 'goal', 'You are halfway towards your reading goal this month!',
-        datetime.strptime('2025-04-23 08:00:00', '%Y-%m-%d %H:%M:%S')
-    )
-    
-    create_notification(
-        bookworm, 'Andy', 'comment', "replied to your comment on 'King's Cage'.",
-        datetime.strptime('2025-04-23 11:20:00', '%Y-%m-%d %H:%M:%S')
-    )
-    
-    create_notification(
-        bookworm, 'Sarah', 'friend', "liked your review of 'A Court of Thorns and Roses'.",
-        datetime.strptime('2025-04-24 09:00:00', '%Y-%m-%d %H:%M:%S'),
-        is_read=True
-    )
-    
-    create_notification(
-        bookworm, 'system', 'goal', "You finished reading 5 books this month!",
-        datetime.strptime('2025-04-25 10:00:00', '%Y-%m-%d %H:%M:%S')
-    )
-    
-    # Create notifications for wizardfan01
-    create_notification(
-        wizardfan01, 'admin', 'announcement', 'The site will undergo maintenance early Sunday morning.',
-        datetime.strptime('2025-04-22 12:00:00', '%Y-%m-%d %H:%M:%S')
-    )
-    
-    create_notification(
-        wizardfan01, 'system', 'welcome', 'Welcome to BookGraph, wizardfan01! Start tracking your reading.',
-        datetime.strptime('2025-04-25 11:00:00', '%Y-%m-%d %H:%M:%S')
-    )
-    
-    create_notification(
-        wizardfan01, 'bookworm', 'comment', 'commented on your profile.',
-        datetime.strptime('2025-04-25 11:30:00', '%Y-%m-%d %H:%M:%S')
-    )
+
     
     db.session.commit()
-    print("Notifications created successfully")
+    print("Reading progress entries created successfully")
     
-    print("Database seeding completed successfully")
+    print("Database seeding completed successfully!")
 
 if __name__ == '__main__':
     with application.app_context():

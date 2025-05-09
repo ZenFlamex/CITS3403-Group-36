@@ -35,8 +35,8 @@
     <div class="col-md-6" style="margin-top: 50px;">
         <p style="font-size: 1.5rem;"><strong>Username:</strong> {{ username }}</p>
         <p style="font-size: 1.5rem;"><strong>Email:</strong> {{ current_user.email }}</p>
-        <p style="font-size: 1.5rem;"><strong>Join Date:</strong> [Join Date Placeholder]</p>
-        <p style="font-size: 1.5rem;"><strong>Favourite Genre:</strong> [Favourite Genre Placeholder]</p>
+        <p style="font-size: 1.5rem;"><strong>Join Date:</strong>  {{ current_user.join_date|datetimeformat('%d %B %Y') }}</p>
+        <p style="font-size: 1.5rem;"><strong>Favourite Genre:</strong> {{ favorite_genre }}</p>
     </div>
 </div>
 

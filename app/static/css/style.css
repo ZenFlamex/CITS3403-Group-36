@@ -451,3 +451,58 @@ input[type="submit"]:active, .btn-primary[type="submit"]:active {
 #favouriteToggleBtn:hover .bi {
     color: #ffc107;
 }
+
+
+/* Challenge completion indicator styles */
+.badge.rounded-circle {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+/* Animation for when challenges are completed */
+@keyframes checkmarkPop {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.badge.bg-success.rounded-circle {
+    animation: checkmarkPop 0.5s ease-out;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Add hover effect on genre badges */
+.badge {
+    transition: all 0.2s ease;
+}
+
+.badge.bg-light:hover {
+    background-color: #e9ecef !important;
+    cursor: default;
+}
+
+.badge.bg-success:hover {
+    transform: scale(1.05);
+    cursor: default;
+}
+
+/* Progress bar animation */
+.progress-bar {
+    transition: width 1s ease-in-out;
+}
+
+/* Reading challenge completion indicator */
+.reading-challenge-completed .progress-bar {
+    background-image: linear-gradient(45deg, rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.15) 75%, transparent 75%, transparent);
+    background-size: 1rem 1rem;
+    animation: progress-bar-stripes 1s linear infinite;
+}
+
+@keyframes progress-bar-stripes {
+    0% { background-position: 1rem 0; }
+    100% { background-position: 0 0; }
+}
