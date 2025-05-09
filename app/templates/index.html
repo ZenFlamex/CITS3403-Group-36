@@ -215,7 +215,65 @@
             {% endif %}
         </div>
     </div>
+
+    <!-- shared with you section -->
+    <div class="book-section mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3><i class="bi bi-book-half me-2"></i>Shared with You</h3>
+            <a href="{{ url_for('my_books', shared_with_me=1) }}" class="text-decoration-none">View All</a>
+        </div>
+   
+        <div class="row">
+            {% if shared_books_with_user %} 
+                {% for book in shared_books_with_user %} 
+                    <div class="col-md-3 col-sm-6 mb-4">
+                        <a href="{{ url_for('book_detail', book_id=book.id) }}" class="text-decoration-none">
+                            <div class="book-card card h-100">
+                                <div class="book-cover-container">
+                                    <img src="{{ book.cover_image if book.cover_image else url_for('static', filename='images/default_cover.png') }}" alt="{{ book.title }}" class="card-img-top book-cover">
+                                </div>
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ book.title }}</h5>
+                                    <p class="card-text text-muted">{{ book.author }}</p>
+                                    <div class="book-rating">
+                                        {% if book.rating is not none %}
+                                            {% for i in range(book.rating) %}
+                                                <i class="bi bi-star-fill text-warning"></i>
+                                            {% endfor %}
+                                            {% for i in range(5 - book.rating) %}
+                                                <i class="bi bi-star text-warning"></i>
+                                            {% endfor %}
+                                        {% else %}
+                                            {% for i in range(5) %}
+                                                <i class="bi bi-star text-warning"></i>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <p class="small">
+                                        <i class="bi bi-person-circle me-1"></i>
+                                        <span>{{ book.creator.username }}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12">
+                    <div class="placeholder-message card p-4 text-center">
+                        <i class="bi bi-envelope-paper-heart display-4 text-muted mb-3"></i>
+                        <h4>No books have been shared with you yet</h4>
+                        <p class="text-muted">When someone shares a book with you, it will appear here.</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+ 
 {% else %}
+
     <!-- Not logged in view -->
     <div class="row mb-5">
         <div class="col-md-8">

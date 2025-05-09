@@ -70,6 +70,19 @@ def index():
             Book.creator_id != current_user_id
         ).all()
         
+        shared_book_objects = []
+        
+        book_share_entries = BookShare.query.filter_by(shared_with_user_id=current_user.id).all()
+        
+        shared_book_ids_processed = set() 
+        for entry in book_share_entries:
+            if entry.book and entry.book.id not in shared_book_ids_processed:
+                shared_book_objects.append(entry.book)
+                shared_book_ids_processed.add(entry.book.id)
+        
+        # Limit the number of shared books displayed on the homepage for brevity
+        shared_books_for_template = shared_book_objects[:4]
+
         # Calculate reading statistics
         reading_count = Book.query.filter_by(
             creator_id=current_user_id,
@@ -126,7 +139,8 @@ def index():
             genre_challenge_list=genre_challenge_list,
             genre_completion=genre_completion,
             all_genres_completed=all_genres_completed,
-            reading_challenge_completed=reading_challenge_completed
+            reading_challenge_completed=reading_challenge_completed,
+            shared_books_with_user=shared_books_for_template
         )
     else:
         # User is not authenticated - show all public books
@@ -135,7 +149,8 @@ def index():
         return render_template(
             'index.html',
             title="Home",
-            public_books=public_books
+            public_books=public_books,
+            shared_books_with_user=[]
         )
 
 @application.route('/signup', methods=['GET', 'POST']) 
@@ -283,25 +298,51 @@ def upload_book():
 @application.route('/my_books')
 @login_required
 def my_books():
-    favourites_filter = request.args.get('favourites', '0') == '1'
+    favourites_filter = request.args.get('favourites', type=int, default=0) == 1
+    shared_filter = request.args.get('shared_with_me', type=int, default=0) == 1
+
+    page_title = "My Books"  # Default page title
+    active_filter_type = "all" # Default active filter identifier
+    books_to_display = [] # Initialize list to hold books for display
 
     if favourites_filter:
-        user_books = Book.query.filter_by(creator_id=current_user.id, is_favorite=True).all()
-    else:
-        user_books = Book.query.filter_by(creator_id=current_user.id).all()
+        books_to_display = Book.query.filter_by(creator_id=current_user.id, is_favorite=True).order_by(Book.title).all()
+        page_title = "My Favorite Books"
+        active_filter_type = "favourites"
+       
+        status_order = {'In Progress': 0, 'Completed': 1, 'Dropped': 2}
+        books_to_display.sort(key=lambda b: (status_order.get(b.status, 3), b.title.lower()))
 
-    status_order = {'In Progress': 0, 'Completed': 1, 'Dropped': 2}
-    user_books.sort(key=lambda b: status_order.get(b.status, 3))
+    elif shared_filter:
+        book_share_entries = BookShare.query.filter_by(shared_with_user_id=current_user.id).all()
+        processed_book_ids = set()
+        for entry in book_share_entries:
+            if entry.book and entry.book.id not in processed_book_ids:
+                books_to_display.append(entry.book)
+                processed_book_ids.add(entry.book.id)
+        # Sort shared books by title
+        books_to_display.sort(key=lambda book: book.title.lower())
+        page_title = "Books Shared With Me"
+        active_filter_type = "shared"
+
+    else:  
+        books_to_display = Book.query.filter_by(creator_id=current_user.id).all()
+        # Sort user's own books by status, then by title
+        status_order = {'In Progress': 0, 'Completed': 1, 'Dropped': 2}
+        books_to_display.sort(key=lambda b: (status_order.get(b.status, 3), b.title.lower()))
 
     view_mode = request.args.get('view', 'card')
     if view_mode not in ['card', 'row']:
         view_mode = 'card'
 
     return render_template('my_books.html',
-                            title="My Books",
-                            current_books=user_books,
-                            view_mode=view_mode,
-                            filter_favourites=favourites_filter)
+                           title=page_title,  
+                           current_books=books_to_display, 
+                           view_mode=view_mode,
+                           active_filter=active_filter_type, 
+                           filter_favourites=favourites_filter, 
+                           filter_shared=shared_filter  
+                           )
 
 def get_favorite_genre(user_id):
     """
@@ -1047,3 +1088,4 @@ def update_rating(book_id):
         flash("Invalid rating value.", "danger")
 
     return redirect(url_for('book_detail', book_id=book.id))
+

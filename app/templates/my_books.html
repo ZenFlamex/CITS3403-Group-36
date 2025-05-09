@@ -1,25 +1,46 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="book-section mb-5">
 
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1>{{ title }}</h1>
+        <h1>
+            {% if active_filter == "favourites" %}
+                <i class="bi bi-star-fill text-warning me-2"></i>
+            {% elif active_filter == "shared" %}
+                <i class="bi bi-people-fill me-2"></i>
+            {% else %}
+                <i class="bi bi-book-half me-2"></i>
+            {% endif %}
+            {{ title }}
+        </h1>
         <div class="btn-group" role="group" aria-label="View toggle">
-            <div class="btn-group" role="group" style="width: auto; height: 100%;">
-                <button id="favouriteToggleBtn" class="btn btn-outline-warning" onclick="toggleFavouriteFilter()" title="Toggle Favourite Books">
-                    <i id="favouriteStarIcon" class="bi {% if filter_favourites %}bi-star-fill{% else %}bi-star{% endif %} text-warning"></i>
-                </button>
-            </div>
-            <a href="{{ url_for('my_books', view='card') }}" class="btn btn-outline-primary {% if view_mode == 'card' %}active{% endif %}" title="Card View">
+            <a href="{{ url_for('my_books', view='card', favourites=1 if active_filter == 'favourites' else 0, shared_with_me=1 if active_filter == 'shared' else 0) }}"
+               class="btn btn-outline-primary {% if view_mode == 'card' %}active{% endif %}" title="Card View">
                 <i class="bi bi-grid-3x3-gap-fill"></i>
             </a>
-            <a href="{{ url_for('my_books', view='row') }}" class="btn btn-outline-primary {% if view_mode == 'row' %}active{% endif %}" title="List View">
+            <a href="{{ url_for('my_books', view='row', favourites=1 if active_filter == 'favourites' else 0, shared_with_me=1 if active_filter == 'shared' else 0) }}"
+               class="btn btn-outline-primary {% if view_mode == 'row' %}active{% endif %}" title="List View">
                 <i class="bi bi-list-ul"></i>
             </a>
         </div>
     </div>
     <hr>
+
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link {% if active_filter == 'all' %}active{% endif %}"
+               href="{{ url_for('my_books', view=view_mode) }}">All My Books</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_filter == 'favourites' %}active{% endif %}"
+               href="{{ url_for('my_books', favourites=1, view=view_mode) }}">Favorites</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_filter == 'shared' %}active{% endif %}"
+               href="{{ url_for('my_books', shared_with_me=1, view=view_mode) }}">Shared With Me</a>
+        </li>
+    </ul>
 
     {% if current_books %}
 
@@ -29,35 +50,50 @@
                 {% for book in current_books %}
                 <div class="col">
                     <a href="{{ url_for('book_detail', book_id=book.id) }}" class="text-decoration-none">
-                        <div class="book-card card h-100">
+                        <div class="book-card card h-100 shadow-sm">
                             <div class="book-cover-container position-relative">
-                                <img src="{{ book.cover_image }}" alt="{{ book.title }} Cover" class="card-img-top book-cover">
-                                <div class="status-badge 
+                                <img src="{{ book.cover_image if book.cover_image else url_for('static', filename='images/default_cover.png') }}" alt="{{ book.title }} Cover" class="card-img-top book-cover">
+                                {% if active_filter == 'all' and book.status %}
+                                <div class="status-badge
                                     {% if book.status == 'Completed' %}badge-completed{% endif %}
                                     {% if book.status == 'In Progress' %}badge-progress{% endif %}
                                     {% if book.status == 'Dropped' %}badge-dropped{% endif %}
                                 ">
                                     {{ book.status }}
                                 </div>
+                                {% endif %}
                             </div>
                             <div class="card-body d-flex flex-column">
                                 <h5 class="card-title fs-6">{{ book.title }}</h5>
                                 <p class="card-text text-muted small mb-2 flex-grow-1">{{ book.author }}</p>
-                                
-                                {% if book.status == 'In Progress' %}
+
+                                {% if active_filter == 'all' and book.status == 'In Progress' %}
                                 <div class="book-progress mb-2">
                                     <small class="text-muted">{{ book.current_page }}/{{ book.total_pages }} pages</small>
                                 </div>
                                 {% endif %}
-                                {% if book.status == 'Completed'%}
-                                    <div class="book-rating">
-                                        {% for i in range(book.rating) %}
-                                            <i class="bi bi-star-fill text-warning"></i>
-                                        {% endfor %}
-                                        {% for i in range(5 - book.rating) %}
-                                            <i class="bi bi-star text-warning"></i>
-                                        {% endfor %}
+                                
+                                {% if active_filter == 'shared' %}
+                                    <div class="book-rating mb-2">
+                                        {% if book.rating is not none %}
+                                            {% for i in range(book.rating) %}<i class="bi bi-star-fill text-warning"></i>{% endfor %}
+                                            {% for i in range(5 - book.rating) %}<i class="bi bi-star text-warning"></i>{% endfor %}
+                                        {% else %}
+                                            {% for i in range(5) %}<i class="bi bi-star text-warning"></i>{% endfor %}
+                                        {% endif %}
                                     </div>
+                                {% elif book.rating is not none and ((active_filter == 'all' and book.status == 'Completed') or active_filter == 'favourites') %}
+                                    <div class="book-rating mb-2">
+                                        {% for i in range(book.rating) %}<i class="bi bi-star-fill text-warning"></i>{% endfor %}
+                                        {% for i in range(5 - book.rating) %}<i class="bi bi-star text-warning"></i>{% endfor %}
+                                    </div>
+                                {% endif %}
+
+                                {% if active_filter == 'shared' and book.creator %}
+                                <p class="small mt-auto">
+                                    <i class="bi bi-person-circle me-1"></i>
+                                    <span>{{ book.creator.username }}</span>
+                                </p>
                                 {% endif %}
                             </div>
                         </div>
@@ -70,17 +106,25 @@
 
 
         {% if view_mode == 'row' %}
-        <div class="book-section-row mb-5">
+        
+        <div class="book-section mb-5">
             <ul class="list-group">
                 {% for book in current_books %}
                 <a href="{{ url_for('book_detail', book_id=book.id) }}" class="text-decoration-none">
-                    <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center">
-                        <div class="me-3 mb-2 mb-md-0">
+                    <li class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                        <div class="me-md-3 mb-2 mb-md-0 flex-grow-1">
                             <h5 class="mb-1 fs-6">{{ book.title }}</h5>
                             <small class="text-muted">{{ book.author }}</small>
+                            {% if active_filter == 'shared' and book.creator %}
+                            <p class="small mb-0 mt-1">
+                                <i class="bi bi-person-circle me-1 text-primary"></i>
+                                <span class="text-primary">{{ book.creator.username }}</span>
+                            </p>
+                            {% endif %}
                         </div>
-                        <div class="text-end">
-                            <span class="badge rounded-pill 
+                        <div class="text-md-end mt-2 mt-md-0">
+                            {% if active_filter == 'all' and book.status %}
+                            <span class="badge rounded-pill mb-1
                                 {% if book.status == 'Completed' %}badge-completed{% endif %}
                                 {% if book.status == 'In Progress' %}badge-progress{% endif %}
                                 {% if book.status == 'Dropped' %}badge-dropped{% endif %}
@@ -90,15 +134,22 @@
                             {% if book.status == 'In Progress' %}
                             <small class="book-progress-row text-muted d-block">{{ book.current_page }}/{{ book.total_pages }} pages</small>
                             {% endif %}
-                            {% if book.status == 'Completed' %}
-                            <div class="book-rating-row d-block">
-                                {% for i in range(book.rating) %}
-                                    <i class="bi bi-star-fill text-warning small"></i>
-                                {% endfor %}
-                                {% for i in range(5 - book.rating) %}
-                                    <i class="bi bi-star text-warning small"></i>
-                                {% endfor %}
-                            </div>
+                            {% endif %}
+
+                            {% if active_filter == 'shared' %}
+                                <div class="book-rating-row d-block">
+                                    {% if book.rating is not none %}
+                                        {% for i in range(book.rating) %}<i class="bi bi-star-fill text-warning small"></i>{% endfor %}
+                                        {% for i in range(5 - book.rating) %}<i class="bi bi-star text-warning small"></i>{% endfor %}
+                                    {% else %}
+                                        {% for i in range(5) %}<i class="bi bi-star text-warning small"></i>{% endfor %}
+                                    {% endif %}
+                                </div>
+                            {% elif book.rating is not none and ((active_filter == 'all' and book.status == 'Completed') or active_filter == 'favourites') %}
+                                <div class="book-rating-row d-block">
+                                    {% for i in range(book.rating) %}<i class="bi bi-star-fill text-warning small"></i>{% endfor %}
+                                    {% for i in range(5 - book.rating) %}<i class="bi bi-star text-warning small"></i>{% endfor %}
+                                </div>
                             {% endif %}
                         </div>
                     </li>
@@ -108,19 +159,28 @@
         </div>
         {% endif %}
 
-
     {% else %}
         <div class="col-12">
-            <div class="placeholder-message card p-4 text-center">
-                <i class="bi bi-book display-4 text-muted mb-3"></i>
-                <h4>You haven't added any books yet</h4>
-                <p class="text-muted">Start building your personal library</p>
-                <a href="{{ url_for('upload_book') }}" class="btn btn-primary mt-2">Add a Book</a>
+            <div class="placeholder-message card p-4 text-center bg-light">
+                {% if active_filter == "favourites" %}
+                    <i class="bi bi-star display-4 text-warning mb-3"></i>
+                    <h4>No favorite books yet.</h4>
+                    <p class="text-muted">Mark some books as favorites to see them here!</p>
+                {% elif active_filter == "shared" %}
+                    <i class="bi bi-envelope-paper-heart display-4 text-info mb-3"></i>
+                    <h4>No books have been shared with you yet.</h4>
+                    <p class="text-muted">When other users share books with you, they will appear here.</p>
+                {% else %}
+                    <i class="bi bi-book display-4 text-primary mb-3"></i>
+                    <h4>You haven't added any books yet.</h4>
+                    <p class="text-muted">Start building your personal library by adding your first book.</p>
+                    <a href="{{ url_for('upload_book') }}" class="btn btn-primary mt-2"><i class="bi bi-plus-circle me-1"></i>Add New Book</a>
+                {% endif %}
             </div>
         </div>
     {% endif %}
 </div>
 
-<script src="{{ url_for('static', filename='js/filter_books.js') }}"></script>
+{# <script src="{{ url_for('static', filename='js/filter_books.js') }}"></script> #}
 
 {% endblock %}
