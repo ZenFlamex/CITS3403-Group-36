@@ -201,10 +201,6 @@ def logout():
     flash('You have been logged out.', 'info')
     return redirect(url_for('index'))
 
-@application.route('/stats')
-@login_required
-def stats():
-    return render_template('stats.html', title='Statistics')
 
 @application.route('/upload_book', methods=['GET', 'POST'])
 @login_required
@@ -922,25 +918,25 @@ def check_and_create_milestone_notifications(user):
             'condition': lambda u: (db.session.query(func.sum(ReadingProgress.pages_read))
                                     .filter(ReadingProgress.user_id == u.id).scalar() or 0) >= 100,
             'text': 'A journey of a thousand pages begins with a single step! You\'ve read over 100 pages!',
-            'link': lambda: url_for('stats', _external=True)
+            'link': lambda: url_for('my_books', _external=True)
         },
         'read_1000_pages': { 
             'condition': lambda u: (db.session.query(func.sum(ReadingProgress.pages_read))
                                     .filter(ReadingProgress.user_id == u.id).scalar() or 0) >= 1000,
             'text': 'Breaking a thousand! You\'ve read over 1000 pages!',
-            'link': lambda: url_for('stats', _external=True)
+            'link': lambda: url_for('my_books', _external=True)
         },
         'read_5000_pages': {
             'condition': lambda u: (db.session.query(func.sum(ReadingProgress.pages_read))
                                     .filter(ReadingProgress.user_id == u.id).scalar() or 0) >= 5000,
             'text': 'Page conqueror! Your reading volume has exceeded 5000 pages!',
-            'link': lambda: url_for('stats', _external=True)
+            'link': lambda: url_for('my_books', _external=True)
         },
         'read_10000_pages': { 
             'condition': lambda u: (db.session.query(func.sum(ReadingProgress.pages_read))
                                     .filter(ReadingProgress.user_id == u.id).scalar() or 0) >= 10000,
             'text': 'Breaking ten thousand! Your reading volume has exceeded 10,000 pages!',
-            'link': lambda: url_for('stats', _external=True)
+            'link': lambda: url_for('my_books', _external=True)
         },
 
          'diverse_reader_3_genres': { 
