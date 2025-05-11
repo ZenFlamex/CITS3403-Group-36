@@ -123,6 +123,7 @@ class ReadingProgress(db.Model):
     user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     pages_read: so.Mapped[int] = so.mapped_column(nullable=False)
     notes: so.Mapped[Optional[str]] = so.mapped_column(sa.Text, nullable=True)
+    timestamp: so.Mapped[datetime] = so.mapped_column(sa.DateTime, default=lambda: datetime.utcnow())
 
     # Relationships
     book: so.Mapped["Book"] = so.relationship(back_populates="reading_progress")
