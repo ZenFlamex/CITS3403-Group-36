@@ -201,10 +201,6 @@ def logout():
     flash('You have been logged out.', 'info')
     return redirect(url_for('index'))
 
-# @application.route('/stats')
-# @login_required
-# def stats():
-#     return render_template('stats.html', title='Statistics')
 
 @application.route('/upload_book', methods=['GET', 'POST'])
 @login_required
