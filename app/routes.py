@@ -201,10 +201,6 @@ def logout():
     flash('You have been logged out.', 'info')
     return redirect(url_for('index'))
 
-@application.route('/forgot_password')
-def forgot_password():
-    return render_template('forgot_password.html', title='Forgot Password')
-
 @application.route('/stats')
 @login_required
 def stats():
@@ -567,7 +563,10 @@ def book_detail(book_id):
     try:
         if hasattr(book, 'reading_progress') and book.reading_progress:
             reading_progress_data = [
-                {"pages_read": progress.pages_read}
+                {
+                    "pages_read": progress.pages_read,
+                    "timestamp": progress.timestamp.isoformat()  # Convert timestamp to ISO 8601 format
+                }
                 for progress in book.reading_progress
             ]
 
@@ -1088,4 +1087,3 @@ def update_rating(book_id):
         flash("Invalid rating value.", "danger")
 
     return redirect(url_for('book_detail', book_id=book.id))
-

@@ -186,8 +186,9 @@
                                                     {% endif %}
                                                 </span><br>
                                                 {% if progress.notes %}
-                                                    <span class="text-muted">{{ progress.notes }}</span>
+                                                    <span class="text-muted">{{ progress.notes }}</span><br>
                                                 {% endif %}
+                                                <small class="text-muted">Added on: {{ progress.timestamp.strftime('%d %B %Y, %I:%M %p') }}</small>
                                             </div>
                                             <form method="POST" action="{{ url_for('delete_reading_progress', book_id=book.id, progress_id=progress.id) }}" style="margin: 0;">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -265,12 +266,22 @@
 <script src="{{ url_for('static', filename='js/book_detail_sharing.js') }}" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    
-    const readingProgressData = {{ reading_progress_data | tojson }}; 
+    const readingProgressData = {{ reading_progress_data | tojson }};
 
     if (readingProgressData && readingProgressData.length > 0) {
-        const labels = readingProgressData.map((_, index) => `Entry #${index + 1}`); 
-        const pagesReadData = readingProgressData.map(progress => progress.pages_read);
+        // Group data by date
+        const groupedData = readingProgressData.reduce((acc, progress) => {
+            const date = new Date(progress.timestamp).toLocaleDateString(); // Format date as "MM/DD/YYYY"
+            if (!acc[date]) {
+                acc[date] = 0; // Initialize the date with 0 pages read
+            }
+            acc[date] += progress.pages_read; // Add pages read for this date
+            return acc;
+        }, {});
+
+        // Extract labels (dates) and data (pages read per date)
+        const labels = Object.keys(groupedData); // Dates as X-axis labels
+        const pagesReadData = Object.values(groupedData); // Pages read per date
 
         // Calculate cumulative total pages read
         const cumulativeData = [];
@@ -280,18 +291,19 @@
             cumulativeData.push(cumulativeTotal);
         });
 
+        // Bar Chart: Pages Read Per Date
         const barCanvasElement = document.getElementById('readingProgressChart');
         if (barCanvasElement) {
             try {
                 const barCtx = barCanvasElement.getContext('2d');
                 if (barCtx) {
-                    console.log("Initializing Bar Chart (Pages Read Per Entry)."); 
+                    console.log("Initializing Bar Chart (Pages Read Per Date).");
                     new Chart(barCtx, {
                         type: 'bar',
                         data: {
-                            labels: labels,
+                            labels: labels, // Dates as X-axis labels
                             datasets: [{
-                                label: 'Pages Read Per Entry',
+                                label: 'Pages Read Per Date',
                                 data: pagesReadData,
                                 backgroundColor: 'rgba(75, 192, 192, 0.2)',
                                 borderColor: 'rgba(75, 192, 192, 1)',
@@ -299,34 +311,31 @@
                             }]
                         },
                         options: {
-                             scales: {
-                                 x: { title: { display: true, text: 'Reading Entry #' } },
-                                 y: { beginAtZero: true, title: { display: true, text: 'Pages Read' } }
-                             }
-                         }
+                            scales: {
+                                x: { title: { display: true, text: 'Date' } },
+                                y: { beginAtZero: true, title: { display: true, text: 'Pages Read' } }
+                            }
+                        }
                     });
                 } else {
-                     console.error("Failed to get 2D context for readingProgressChart.");
+                    console.error("Failed to get 2D context for readingProgressChart.");
                 }
-            } catch(e) {
-                 console.error("Error initializing Bar Chart:", e);
+            } catch (e) {
+                console.error("Error initializing Bar Chart:", e);
             }
-        } else {
-             // console.warn("Canvas element 'readingProgressChart' not found on this page.");
         }
 
-        // Line Chart for Cumulative Pages Read
+        // Line Chart: Cumulative Pages Read Over Time
         const lineCanvasElement = document.getElementById('cumulativeProgressChart');
         if (lineCanvasElement) {
-             try {
+            try {
                 const lineCtx = lineCanvasElement.getContext('2d');
-                
                 if (lineCtx) {
-                    console.log("Initializing Line Chart (Cumulative Pages Read)."); 
+                    console.log("Initializing Line Chart (Cumulative Pages Read Over Time).");
                     new Chart(lineCtx, {
                         type: 'line',
                         data: {
-                            labels: labels,
+                            labels: labels, // Dates as X-axis labels
                             datasets: [{
                                 label: 'Cumulative Pages Read',
                                 data: cumulativeData,
@@ -334,30 +343,27 @@
                                 borderColor: 'rgba(153, 102, 255, 1)',
                                 borderWidth: 2,
                                 fill: true,
-                                tension: 0.1 
+                                tension: 0.1
                             }]
                         },
-                         options: { 
-                             scales: {
-                                 x: { title: { display: true, text: 'Reading Entry #' } },
-                                 y: { beginAtZero: true, title: { display: true, text: 'Total Pages Read' } }
-                             }
-                         }
+                        options: {
+                            scales: {
+                                x: { title: { display: true, text: 'Date' } },
+                                y: { beginAtZero: true, title: { display: true, text: 'Total Pages Read' } }
+                            }
+                        }
                     });
                 } else {
                     console.error("Failed to get 2D context for cumulativeProgressChart.");
                 }
-             } catch(e) {
-                 console.error("Error initializing Line Chart:", e);
-             }
-        } else {
-             // console.warn("Canvas element 'cumulativeProgressChart' not found on this page.");
+            } catch (e) {
+                console.error("Error initializing Line Chart:", e);
+            }
         }
 
     } else {
         console.log("No reading progress data found. Skipping chart initialization.");
-     
     }
 </script>
 
-{% endblock %} 
+{% endblock %}

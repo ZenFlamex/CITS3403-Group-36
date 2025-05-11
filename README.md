@@ -2,30 +2,31 @@
 
 ## Purpose of the Application
 
-The **Personal Book Reading Tracker** application allows users to track their reading progress, set goals, and analyze reading habits. Users can log book details, track reading sessions, write reviews, and store quotes. The app calculates insightful statistics such as reading pace, monthly progress, and comparisons between different book genres. Additionally, users can make their profiles and books public or private, add friends, and share progress with a private group.
+**BookCorner** is a comprehensive book tracking application that helps users manage their reading journey. The platform allows users to track book progress, rate books, log reading sessions, and share books with friends. With insightful statistics and visualizations, users can better understand their reading habits and reach meaningful goals.
 
 ## Key Features
 
-- **Track Book Information**: Add book title, author, genre, and the date you started/finished reading.
-- **Log Reading Sessions**: Input the number of pages read and the duration of each reading session.
-- **Rating and Review**: Rate books and leave detailed reviews.
-- **Reading Goals**: Set personal reading goals for pages, books, or genres to stay motivated.
-- **Quotes**: Save memorable quotes from books for later reference.
-- **Reading Stats**: Get statistics like average pages read per day, reading speed comparison between fiction and non-fiction, and month-over-month progress.
-- **Privacy Settings**: Toggle the visibility of books (public/private) and make your entire account public or private.
-- **Share your books to your friends**: Look up friends and share specific books with them
+- **Book Collection Management**: Add books manually or search via OpenLibrary API to maintain your personal library
+- **Progress Tracking**: Record current page numbers and completion status (In Progress, Completed, Dropped)
+- **Reading Analytics**: View statistics on reading speed, pages read over time, and genre distribution
+- **Reading Goals**: Set and track personal reading challenges based on book count or genres
+- **User Connectivity**: Add friends and selectively share books and reading progress
+- **Privacy Controls**: Toggle visibility settings for individual books and profile information
+- **Book Details**: Store ratings, reviews, and completion dates for each book
+- **User Experience**: Toggle between light/dark themes and customize profile settings
+- **Book Discovery**: See what friends are reading and explore public shelves
 
-The application also provides insightful statistics such as:
+The application provides valuable insights including:
 
-- Average pages read per day.
-- Comparison of reading speed between fiction and non-fiction books.
-- Progress updates on reading goals, with year-over-year comparisons.
+- Visual representations of reading progress over time
+- Achievement tracking for completed reading goals and milestones
 
-To maintain user privacy, books can be toggled between public and private visibility, and users can make their entire account either public or private. Users can also add friends to share progress and private content with specific groups.
+BookCorner prioritizes user privacy with granular controls for sharing settings. Books can be marked as public or private individually, and users can also choose selected readers to share books with them privately.
+
 
 ## Design and Use
 
-The design focuses on user-friendliness with a clean, responsive interface. The user can add details about books, track reading sessions, rate books, and save quotes. It offers a dashboard for easy access to reading statistics, monthly progress, and comparisons between genres. Privacy is emphasized with options for toggling book visibility and making accounts public or private. The system supports friend interactions for sharing progress and accessing private content.
+The design focuses on user-friendliness with a clean, responsive interface. The user can add details about books, track reading sessions, rate books, and save quotes. It offers a dashboard for easy access to reading statistics, customizable profile and interactive book details to track your books. Privacy is emphasized with options for toggling book visibility and making accounts public or private. The system supports selective user selection for sharing progress and accessing private content.
 
 ## Group Members
 
@@ -74,7 +75,7 @@ The design focuses on user-friendliness with a clean, responsive interface. The 
    flask db upgrade
    ```
 
-5. **\*Seed the Database with Initial Data**
+5. **Seed the Database with Initial Data**
 
    ```bash
    python seed.py
