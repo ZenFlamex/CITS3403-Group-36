@@ -1,5 +1,5 @@
 from app import db, application
-from app.models import User, Book, ReadingProgress
+from app.models import User, Book, ReadingProgress, BookShare, Notification
 from datetime import datetime, timezone, timedelta
 
 def seed_database():
@@ -8,6 +8,8 @@ def seed_database():
     # Clear existing data in reverse dependency order
     print("Clearing existing data...")
     ReadingProgress.query.delete()
+    BookShare.query.delete()
+    Notification.query.delete()
     Book.query.delete()
     User.query.delete()
     db.session.commit()
@@ -266,7 +268,7 @@ def seed_database():
         status='Completed', 
         total_pages=223, 
         is_favorite=True, 
-        is_public=True,
+        is_public=False,
         start_date=datetime.strptime('2025-02-20', '%Y-%m-%d'),
         end_date=datetime.strptime('2025-03-01', '%Y-%m-%d')
     )
@@ -285,7 +287,7 @@ def seed_database():
         status='Completed', 
         total_pages=251, 
         is_favorite=False, 
-        is_public=True,
+        is_public=False,
         start_date=datetime.strptime('2025-03-05', '%Y-%m-%d'),
         end_date=datetime.strptime('2025-03-15', '%Y-%m-%d')
     )
@@ -304,7 +306,7 @@ def seed_database():
         status='Completed', 
         total_pages=317, 
         is_favorite=True, 
-        is_public=True,
+        is_public=False,
         start_date=datetime.strptime('2025-03-20', '%Y-%m-%d'),
         end_date=datetime.strptime('2025-04-05', '%Y-%m-%d')
     )
@@ -323,7 +325,7 @@ def seed_database():
         status='Completed', 
         total_pages=636, 
         is_favorite=False, 
-        is_public=True,
+        is_public=False,
         start_date=datetime.strptime('2025-05-01', '%Y-%m-%d'),
         end_date=datetime.strptime('2025-05-15', '%Y-%m-%d')
     )
@@ -492,9 +494,29 @@ def seed_database():
     add_progress(mys2, mysterymaven, 182, datetime.strptime('2025-03-25', '%Y-%m-%d'), "What a twisted psychological thriller. The plot twist floored me!")
     mys2.current_page = 432
     
+    # Share wizardfan's books with bookworm
+    print("Creating book shares...")
+    
+    # Function to create a book share
+    def share_book(book, shared_with_user):
+        book_share = BookShare(
+            book_id=book.id,
+            shared_with_user_id=shared_with_user.id,
+            timestamp=datetime.now(timezone.utc)
+        )
+        db.session.add(book_share)
+        return book_share
+    
+    # Share all wizardfan's books with bookworm
+    share_book(hp1, bookworm)
+    share_book(hp2, bookworm)
+    share_book(hp3, bookworm)
+    share_book(hp4, bookworm)
+    
     db.session.commit()
     print("Books created successfully")
     print("Reading progress entries created successfully")
+    print("Book shares created successfully")
     
     print("Database seeding completed successfully!")
 
