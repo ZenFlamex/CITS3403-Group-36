@@ -118,7 +118,9 @@
     <div class="book-section mb-5">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h3><i class="bi bi-star-fill text-warning me-2"></i>Favorite Books</h3>
-            <a href="{{ url_for('my_books', favourites=1, view='card') }}" class="text-decoration-none">View All</a>
+            {% if favorite_books and favorite_books|length == 4 %}
+                <a href="{{ url_for('my_books', favourites=1, view='card') }}" class="text-decoration-none">View All</a>
+            {% endif %}
         </div>
         <div class="row">
             {% if favorite_books %}
@@ -162,7 +164,9 @@
     <div class="book-section mb-5">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h3><i class="bi bi-book-half me-2"></i>My Books</h3>
-            <a href="{{ url_for('my_books') }}" class="text-decoration-none">View All</a>
+            {% if current_books and current_books|length == 4 %}
+                <a href="{{ url_for('my_books') }}" class="text-decoration-none">View All</a>
+            {% endif %}
         </div>
         <div class="row">
             {% if current_books %}
@@ -216,11 +220,13 @@
         </div>
     </div>
 
-    <!-- shared with you section -->
+    <!-- Shared with you section -->
     <div class="book-section mb-5">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h3><i class="bi bi-book-half me-2"></i>Shared with You</h3>
-            <a href="{{ url_for('my_books', shared_with_me=1) }}" class="text-decoration-none">View All</a>
+            {% if shared_books_with_user and shared_books_with_user|length == 4 %}
+                <a href="{{ url_for('my_books', shared_with_me=1) }}" class="text-decoration-none">View All</a>
+            {% endif %}
         </div>
    
         <div class="row">
