@@ -1076,8 +1076,13 @@ def toggle_favorite(book_id):
         flash("Book added to favorites.", "success")
     else:
         flash("Book removed from favorites.", "success")
+    
+    next_url = request.form.get('next')
 
-    return redirect(url_for('book_detail', book_id=book.id))
+    if next_url:
+        return redirect(next_url)
+    else:
+        return redirect(url_for('book_detail', book_id=book.id))
 
 
 @application.route('/book/<int:book_id>/toggle_public', methods=['POST'])
