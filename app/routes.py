@@ -279,7 +279,19 @@ def upload_book():
         
         try:
             db.session.add(new_book)
-            db.session.commit() 
+            db.session.commit()
+            
+            # Add a reading progress entry if current_page > 0
+            if new_book.current_page > 0:
+                initial_progress = ReadingProgress(
+                    book_id=new_book.id,
+                    user_id=current_user.id,
+                    pages_read=new_book.current_page,
+                    notes="Initial progress added when the book was created."
+                )
+                db.session.add(initial_progress)
+                db.session.commit()  # Commit the reading progress entry
+
             flash('Book added successfully!', 'success')
 
             try:
@@ -849,10 +861,25 @@ def delete_reading_progress(book_id, progress_id):
         flash("You don't have permission to delete this progress entry.", "danger")
         return redirect(url_for('book_detail', book_id=book.id))
 
-    db.session.delete(progress)
-    db.session.commit()
+    try:
+        # Delete the reading progress entry
+        db.session.delete(progress)
+        db.session.commit()
 
-    flash("Reading progress entry deleted successfully!", "success")
+        # Recalculate the current_page based on remaining progress entries
+        total_pages_read = db.session.query(db.func.sum(ReadingProgress.pages_read)) \
+            .filter_by(book_id=book.id).scalar() or 0
+        book.current_page = total_pages_read
+
+        # Commit the updated current_page to the database
+        db.session.commit()
+
+        flash("Reading progress entry deleted successfully!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash("Error deleting reading progress entry.", "danger")
+        application.logger.error(f"Error deleting reading progress for book {book_id}: {e}", exc_info=True)
+
     return redirect(url_for('book_detail', book_id=book.id))
 
 
