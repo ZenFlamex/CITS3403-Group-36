@@ -279,7 +279,19 @@ def upload_book():
         
         try:
             db.session.add(new_book)
-            db.session.commit() 
+            db.session.commit()
+            
+            # Add a reading progress entry if current_page > 0
+            if new_book.current_page > 0:
+                initial_progress = ReadingProgress(
+                    book_id=new_book.id,
+                    user_id=current_user.id,
+                    pages_read=new_book.current_page,
+                    notes="Initial progress added when the book was created."
+                )
+                db.session.add(initial_progress)
+                db.session.commit()  # Commit the reading progress entry
+
             flash('Book added successfully!', 'success')
 
             try:

@@ -204,11 +204,15 @@
                     </div>
                     <div class="tab-pane fade" id="statistics" role="tabpanel" aria-labelledby="statistics-tab">
                         <h4 class="mt-3">Reading Statistics</h4>
-                        <h5>Pages Read Over Time</h5>
-                        <canvas id="readingProgressChart" width="400" height="200"></canvas>
-                        <h5 class="mt-4">Cumulative Pages Read Over Time</h5>
-                        <canvas id="cumulativeProgressChart" width="400" height="200"></canvas>
-                        <p class="text-muted mt-3">The charts above show the number of pages read and the cumulative total over time.</p>
+                        {% if reading_progress_data and reading_progress_data|length > 0 %}
+                            <h5>Pages Read Over Time</h5>
+                            <canvas id="readingProgressChart" width="400" height="200"></canvas>
+                            <h5 class="mt-4">Cumulative Pages Read Over Time</h5>
+                            <canvas id="cumulativeProgressChart" width="400" height="200"></canvas>
+                            <p class="text-muted mt-3">The charts above show the number of pages read and the cumulative total over time.</p>
+                        {% else %}
+                            <p class="text-muted mt-3">No reading statistics available yet.</p>
+                        {% endif %}
                     </div>
                 </div>
             </div>
