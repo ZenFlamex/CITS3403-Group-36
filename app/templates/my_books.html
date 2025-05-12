@@ -53,6 +53,17 @@
                         <div class="book-card card h-100 shadow-sm">
                             <div class="book-cover-container position-relative">
                                 <img src="{{ book.cover_image if book.cover_image else url_for('static', filename='images/default_cover.png') }}" alt="{{ book.title }} Cover" class="card-img-top book-cover">
+                                <form method="POST" action="{{ url_for('toggle_favorite', book_id=book.id) }}" class="position-absolute top-0 start-0 m-3 mt-2">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="next" value="{{ request.url }}">
+                                    <button type="submit" class="btn btn-link text-warning p-0">
+                                        {% if book.is_favorite %}
+                                        <i class="bi bi-star-fill fs-3"></i>
+                                    {% else %}
+                                            <i class="bi bi-star fs-3"></i>
+                                    {% endif %}
+                                    </button>
+                                </form>                                   
                                 {% if active_filter == 'all' and book.status %}
                                 <div class="status-badge
                                     {% if book.status == 'Completed' %}badge-completed{% endif %}
@@ -112,7 +123,7 @@
                 {% for book in current_books %}
                 <a href="{{ url_for('book_detail', book_id=book.id) }}" class="text-decoration-none">
                     <li class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center">
-                        <div class="me-md-3 mb-2 mb-md-0 flex-grow-1">
+                        <div class="ms-5 me-md-3 mb-2 mb-md-0 flex-grow-1">
                             <h5 class="mb-1 fs-6">{{ book.title }}</h5>
                             <small class="text-muted">{{ book.author }}</small>
                             {% if active_filter == 'shared' and book.creator %}
@@ -123,6 +134,17 @@
                             {% endif %}
                         </div>
                         <div class="text-md-end mt-2 mt-md-0">
+                            <form method="POST" action="{{ url_for('toggle_favorite', book_id=book.id) }}" class="position-absolute top-0 start-0 m-3 mt-2">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="next" value="{{ request.url }}">
+                                <button type="submit" class="btn btn-link text-warning p-0">
+                                    {% if book.is_favorite %}
+                                    <i class="bi bi-star-fill fs-3"></i>
+                                {% else %}
+                                        <i class="bi bi-star fs-3"></i>
+                                {% endif %}
+                                </button>
+                            </form>                               
                             {% if active_filter == 'all' and book.status %}
                             <span class="badge rounded-pill mb-1
                                 {% if book.status == 'Completed' %}badge-completed{% endif %}

@@ -130,6 +130,17 @@
                             <div class="book-card card h-100">
                                 <div class="book-cover-container">
                                     <img src="{{ book.cover_image }}" alt="{{ book.title }}" class="card-img-top book-cover">
+                                    <form method="POST" action="{{ url_for('toggle_favorite', book_id=book.id) }}" class="position-absolute top-0 start-0 m-3 mt-2">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="next" value="{{ request.url }}">
+                                        <button type="submit" class="btn btn-link text-warning p-0">
+                                            {% if book.is_favorite %}
+                                            <i class="bi bi-star-fill fs-3"></i>
+                                        {% else %}
+                                                <i class="bi bi-star fs-3"></i>
+                                        {% endif %}
+                                        </button>
+                                    </form>                                     
                                 </div>
                                 <div class="card-body">
                                     <h5 class="card-title">{{ book.title }}</h5>
@@ -149,11 +160,11 @@
                 {% endfor %}
             {% else %}
                 <div class="col-12">
-                    <div class="placeholder-message card p-4 text-center">
+                    <div class="placeholder-message card p-4 text-center bg-light">
                         <i class="bi bi-star display-4 text-muted mb-3"></i>
                         <h4>No favorite books yet</h4>
                         <p class="text-muted">Mark books as favorites to see them here</p>
-                        <a href="#" class="btn btn-primary mt-2">Browse Books</a>
+                        <a href="{{ url_for('my_books') }}" class="btn btn-primary mt-2">Browse Books</a>
                     </div>
                 </div>
             {% endif %}
@@ -183,6 +194,17 @@
                                     ">
                                         {{ book.status }}
                                     </div>
+                                    <form method="POST" action="{{ url_for('toggle_favorite', book_id=book.id) }}" class="position-absolute top-0 start-0 m-3 mt-2">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="next" value="{{ request.url }}">
+                                        <button type="submit" class="btn btn-link text-warning p-0">
+                                            {% if book.is_favorite %}
+                                            <i class="bi bi-star-fill fs-3"></i>
+                                        {% else %}
+                                                <i class="bi bi-star fs-3"></i>
+                                        {% endif %}
+                                        </button>
+                                    </form>                                    
                                 </div>
                                 <div class="card-body">
                                     <h5 class="card-title">{{ book.title }}</h5>
@@ -209,7 +231,7 @@
                 {% endfor %}
             {% else %}
                 <div class="col-12">
-                    <div class="placeholder-message card p-4 text-center">
+                    <div class="placeholder-message card p-4 text-center bg-light">
                         <i class="bi bi-book display-4 text-muted mb-3"></i>
                         <h4>You haven't added any books yet</h4>
                         <p class="text-muted">Start building your personal library</p>
@@ -267,7 +289,7 @@
                 {% endfor %}
             {% else %}
                 <div class="col-12">
-                    <div class="placeholder-message card p-4 text-center">
+                    <div class="placeholder-message card p-4 text-center bg-light">
                         <i class="bi bi-envelope-paper-heart display-4 text-muted mb-3"></i>
                         <h4>No books have been shared with you yet</h4>
                         <p class="text-muted">When someone shares a book with you, it will appear here.</p>
