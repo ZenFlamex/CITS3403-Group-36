@@ -15,11 +15,11 @@
             {{ title }}
         </h1>
         <div class="btn-group" role="group" aria-label="View toggle">
-            <a href="{{ url_for('my_books', view='card', favourites=1 if active_filter == 'favourites' else 0, shared_with_me=1 if active_filter == 'shared' else 0) }}"
+            <a href="{{ url_for('main.my_books', view='card', favourites=1 if active_filter == 'favourites' else 0, shared_with_me=1 if active_filter == 'shared' else 0) }}"
                class="btn btn-outline-primary {% if view_mode == 'card' %}active{% endif %}" title="Card View">
                 <i class="bi bi-grid-3x3-gap-fill"></i>
             </a>
-            <a href="{{ url_for('my_books', view='row', favourites=1 if active_filter == 'favourites' else 0, shared_with_me=1 if active_filter == 'shared' else 0) }}"
+            <a href="{{ url_for('main.my_books', view='row', favourites=1 if active_filter == 'favourites' else 0, shared_with_me=1 if active_filter == 'shared' else 0) }}"
                class="btn btn-outline-primary {% if view_mode == 'row' %}active{% endif %}" title="List View">
                 <i class="bi bi-list-ul"></i>
             </a>
@@ -30,15 +30,15 @@
     <ul class="nav nav-tabs mb-4">
         <li class="nav-item">
             <a class="nav-link {% if active_filter == 'all' %}active{% endif %}"
-               href="{{ url_for('my_books', view=view_mode) }}">All My Books</a>
+               href="{{ url_for('main.my_books', view=view_mode) }}">All My Books</a>
         </li>
         <li class="nav-item">
             <a class="nav-link {% if active_filter == 'favourites' %}active{% endif %}"
-               href="{{ url_for('my_books', favourites=1, view=view_mode) }}">Favorites</a>
+               href="{{ url_for('main.my_books', favourites=1, view=view_mode) }}">Favorites</a>
         </li>
         <li class="nav-item">
             <a class="nav-link {% if active_filter == 'shared' %}active{% endif %}"
-               href="{{ url_for('my_books', shared_with_me=1, view=view_mode) }}">Shared With Me</a>
+               href="{{ url_for('main.my_books', shared_with_me=1, view=view_mode) }}">Shared With Me</a>
         </li>
     </ul>
 
@@ -49,11 +49,11 @@
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
                 {% for book in current_books %}
                 <div class="col">
-                    <a href="{{ url_for('book_detail', book_id=book.id) }}" class="text-decoration-none">
+                    <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="text-decoration-none">
                         <div class="book-card card h-100 shadow-sm">
                             <div class="book-cover-container position-relative">
                                 <img src="{{ book.cover_image if book.cover_image else url_for('static', filename='images/default_cover.png') }}" alt="{{ book.title }} Cover" class="card-img-top book-cover">
-                                <form method="POST" action="{{ url_for('toggle_favorite', book_id=book.id) }}" class="position-absolute top-0 start-0 m-3 mt-2">
+                                <form method="POST" action="{{ url_for('main.toggle_favorite', book_id=book.id) }}" class="position-absolute top-0 start-0 m-3 mt-2">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="next" value="{{ request.url }}">
                                     <button type="submit" class="btn btn-link text-warning p-0">
@@ -121,7 +121,7 @@
         <div class="book-section mb-5">
             <ul class="list-group">
                 {% for book in current_books %}
-                <a href="{{ url_for('book_detail', book_id=book.id) }}" class="text-decoration-none">
+                <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="text-decoration-none">
                     <li class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center">
                         <div class="ms-5 me-md-3 mb-2 mb-md-0 flex-grow-1">
                             <h5 class="mb-1 fs-6">{{ book.title }}</h5>
@@ -134,7 +134,7 @@
                             {% endif %}
                         </div>
                         <div class="text-md-end mt-2 mt-md-0">
-                            <form method="POST" action="{{ url_for('toggle_favorite', book_id=book.id) }}" class="position-absolute top-0 start-0 m-3 mt-2">
+                            <form method="POST" action="{{ url_for('main.toggle_favorite', book_id=book.id) }}" class="position-absolute top-0 start-0 m-3 mt-2">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="next" value="{{ request.url }}">
                                 <button type="submit" class="btn btn-link text-warning p-0">
@@ -196,7 +196,7 @@
                     <i class="bi bi-book display-4 text-primary mb-3"></i>
                     <h4>You haven't added any books yet.</h4>
                     <p class="text-muted">Start building your personal library by adding your first book.</p>
-                    <a href="{{ url_for('upload_book') }}" class="btn btn-primary mt-2"><i class="bi bi-plus-circle me-1"></i>Add New Book</a>
+                    <a href="{{ url_for('main.upload_book') }}" class="btn btn-primary mt-2"><i class="bi bi-plus-circle me-1"></i>Add New Book</a>
                 {% endif %}
             </div>
         </div>

@@ -11,13 +11,13 @@
                  class="img-fluid rounded-circle profile-picture"
                  id="profilePreview">
             
-            <form action="{{ url_for('upload_profile_picture') }}" method="POST" enctype="multipart/form-data" id="profileForm">
+            <form action="{{ url_for('main.upload_profile_picture') }}" method="POST" enctype="multipart/form-data" id="profileForm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="file" id="profilePictureInput" name="file" accept="image/*" style="display: none;">
                 <div class="profile-overlay">+</div>
             </form>
 
-            <form action="{{ url_for('remove_profile_picture') }}" method="POST" id="resetForm" style="display: none;">
+            <form action="{{ url_for('main.remove_profile_picture') }}" method="POST" id="resetForm" style="display: none;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             </form>
         </div>
@@ -46,7 +46,7 @@
         <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
             {% for book in recent_books %}
             <div class="col">
-                <a href="{{ url_for('book_detail', book_id=book.id) }}" class="text-decoration-none">
+                <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="text-decoration-none">
                     <div class="book-card card h-100">
                         <div class="book-cover-container position-relative">
                             <img src="{{ book.cover_image }}" alt="{{ book.title }} Cover" class="card-img-top book-cover">
