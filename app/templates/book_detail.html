@@ -81,6 +81,7 @@
             <h3>Book Details</h3>
             <p><strong>Status:</strong> {{ book.status }}</p>
             <p><strong>Pages:</strong> {{ total_pages_read }}/{{ book.total_pages if book.total_pages > 0 else '?' }}</p>
+            <p><strong>Genre:</strong> {{ book.genre }}</p>
             <p><strong>Rating:</strong></p>
             <div id="rating-container" class="d-flex align-items-center">
                 {% if book.rating and book.rating > 0 %}
