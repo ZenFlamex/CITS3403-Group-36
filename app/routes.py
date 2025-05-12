@@ -108,7 +108,17 @@ def index():
         all_user_books = Book.query.filter_by(creator_id=current_user_id).all()
         pages_read = sum(min(b.current_page, b.total_pages) for b in all_user_books)
         
-        hours_read = 145  # Placeholder for hours read, to be calculated later     
+        # Calculate total days reading (distinct days with reading progress)
+        total_days_reading = db.session.query(
+            func.count(
+                func.distinct(
+                    func.date(ReadingProgress.timestamp)
+                )
+            )
+        ).filter(
+            ReadingProgress.user_id == current_user_id
+        ).scalar() or 0
+        
         goal_books = 10   
         
         # Get distinct genres from completed books for the genre explorer challenge
@@ -143,7 +153,7 @@ def index():
             reading_count=reading_count,
             completed_count=completed_count,
             pages_read=pages_read,
-            hours_read=hours_read,
+            total_days=total_days_reading,  # Renamed in logic but keeping template variable name
             completed_books=completed_count,
             goal_books=goal_books,
             genre_challenge_list=genre_challenge_list,
