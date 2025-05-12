@@ -52,33 +52,24 @@ def index():
     if current_user.is_authenticated:
         current_user_id = current_user.id
 
-        # Get favorite books - limit to 4, ordered by status priority
         favorite_books = Book.query.filter_by(
             creator_id=current_user_id, 
             is_favorite=True
         ).all()
         
-        # Sort by status priority: In Progress, Completed, Dropped
-        status_order = {'In Progress': 0, 'Completed': 1, 'Dropped': 2}
-        favorite_books.sort(key=lambda b: (status_order.get(b.status, 3), -b.id))
-        favorite_books = favorite_books[:4]  # Limit to 4 books
-        
-        # Get current books - limit to 4, ordered by status priority
         current_books = Book.query.filter_by(
             creator_id=current_user_id
         ).all()
         
-        # Sort by status priority and then by most recent (highest ID)
-        current_books.sort(key=lambda b: (status_order.get(b.status, 3), -b.id))
-        current_books = current_books[:4]  # Limit to 4 books
+        # Sort by status
+        status_order = {'In Progress': 0, 'Completed': 1, 'Dropped': 2}
+        current_books.sort(key=lambda b: status_order.get(b.status, 3))
 
-        # Get public books - do not limit as per requirement
         public_books = Book.query.filter(
             Book.is_public == True,
             Book.creator_id != current_user_id
         ).all()
         
-        # Get shared book objects - limit to 4
         shared_book_objects = []
         
         book_share_entries = BookShare.query.filter_by(shared_with_user_id=current_user.id).all()
@@ -89,8 +80,7 @@ def index():
                 shared_book_objects.append(entry.book)
                 shared_book_ids_processed.add(entry.book.id)
         
-        # Sort shared books by status priority and limit to 4
-        shared_book_objects.sort(key=lambda b: (status_order.get(b.status, 3), -b.id))
+        # Limit the number of shared books displayed on the homepage for brevity
         shared_books_for_template = shared_book_objects[:4]
 
         # Calculate reading statistics
@@ -279,7 +269,19 @@ def upload_book():
         
         try:
             db.session.add(new_book)
-            db.session.commit() 
+            db.session.commit()
+            
+            # Add a reading progress entry if current_page > 0
+            if new_book.current_page > 0:
+                initial_progress = ReadingProgress(
+                    book_id=new_book.id,
+                    user_id=current_user.id,
+                    pages_read=new_book.current_page,
+                    notes="Initial progress added when the book was created."
+                )
+                db.session.add(initial_progress)
+                db.session.commit()  # Commit the reading progress entry for current page
+
             flash('Book added successfully!', 'success')
 
             try:
