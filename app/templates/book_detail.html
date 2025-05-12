@@ -169,7 +169,7 @@
                 </ul>
                 <div class="tab-content" id="readingTabsContent">
                     <div class="tab-pane fade show active" id="history" role="tabpanel" aria-labelledby="history-tab">
-                        <h4 class="mt-3 mb-3">Reading History</h4> <!-- Added consistent bottom margin -->
+                        <h4 class="mt-3 mb-3">Reading History</h4>
                         {% if book.reading_progress %}
                             <ul class="list-group">
                                 {% for progress in book.reading_progress %}
@@ -199,7 +199,7 @@
                                 {% endfor %}
                             </ul>
                         {% else %}
-                            <p class="text-muted mt-2">No reading history available yet.</p> <!-- Added consistent top margin -->
+                            <p class="text-muted mt-2">No reading history available yet.</p>
                         {% endif %}
                     </div>
                     <div class="tab-pane fade" id="statistics" role="tabpanel" aria-labelledby="statistics-tab">
