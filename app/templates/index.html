@@ -10,7 +10,7 @@
             </div>
         </div>
         <div class="col-md-4 text-end">
-            <a href="{{ url_for('upload_book') }}" class="btn btn-outline-primary"><i class="bi bi-plus-circle me-2"></i>Add New Book</a>
+            <a href="{{ url_for('main.upload_book') }}" class="btn btn-outline-primary"><i class="bi bi-plus-circle me-2"></i>Add New Book</a>
         </div>
     </div>
 
@@ -119,18 +119,18 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h3><i class="bi bi-star-fill text-warning me-2"></i>Favorite Books</h3>
             {% if favorite_books and favorite_books|length == 4 %}
-                <a href="{{ url_for('my_books', favourites=1, view='card') }}" class="text-decoration-none">View All</a>
+                <a href="{{ url_for('main.my_books', favourites=1, view='card') }}" class="text-decoration-none">View All</a>
             {% endif %}
         </div>
         <div class="row">
             {% if favorite_books %}
                 {% for book in favorite_books %}
                     <div class="col-md-3 col-sm-6 mb-4">
-                        <a href="{{ url_for('book_detail', book_id=book.id) }}" class="text-decoration-none">
+                        <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="text-decoration-none">
                             <div class="book-card card h-100">
                                 <div class="book-cover-container">
                                     <img src="{{ book.cover_image }}" alt="{{ book.title }}" class="card-img-top book-cover">
-                                    <form method="POST" action="{{ url_for('toggle_favorite', book_id=book.id) }}" class="position-absolute top-0 start-0 m-3 mt-2">
+                                    <form method="POST" action="{{ url_for('main.toggle_favorite', book_id=book.id) }}" class="position-absolute top-0 start-0 m-3 mt-2">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <input type="hidden" name="next" value="{{ request.url }}">
                                         <button type="submit" class="btn btn-link text-warning p-0">
@@ -164,7 +164,7 @@
                         <i class="bi bi-star display-4 text-muted mb-3"></i>
                         <h4>No favorite books yet</h4>
                         <p class="text-muted">Mark books as favorites to see them here</p>
-                        <a href="{{ url_for('my_books') }}" class="btn btn-primary mt-2">Browse Books</a>
+                        <a href="{{ url_for('main.my_books') }}" class="btn btn-primary mt-2">Browse Books</a>
                     </div>
                 </div>
             {% endif %}
@@ -176,14 +176,14 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h3><i class="bi bi-book-half me-2"></i>My Books</h3>
             {% if current_books and current_books|length == 4 %}
-                <a href="{{ url_for('my_books') }}" class="text-decoration-none">View All</a>
+                <a href="{{ url_for('main.my_books') }}" class="text-decoration-none">View All</a>
             {% endif %}
         </div>
         <div class="row">
             {% if current_books %}
                 {% for book in current_books %}
                     <div class="col-md-3 col-sm-6 mb-4">
-                        <a href="{{ url_for('book_detail', book_id=book.id) }}" class="text-decoration-none">
+                        <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="text-decoration-none">
                             <div class="book-card card h-100">
                                 <div class="book-cover-container">
                                     <img src="{{ book.cover_image }}" alt="{{ book.title }}" class="card-img-top book-cover">
@@ -194,7 +194,7 @@
                                     ">
                                         {{ book.status }}
                                     </div>
-                                    <form method="POST" action="{{ url_for('toggle_favorite', book_id=book.id) }}" class="position-absolute top-0 start-0 m-3 mt-2">
+                                    <form method="POST" action="{{ url_for('main.toggle_favorite', book_id=book.id) }}" class="position-absolute top-0 start-0 m-3 mt-2">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <input type="hidden" name="next" value="{{ request.url }}">
                                         <button type="submit" class="btn btn-link text-warning p-0">
@@ -235,7 +235,7 @@
                         <i class="bi bi-book display-4 text-muted mb-3"></i>
                         <h4>You haven't added any books yet</h4>
                         <p class="text-muted">Start building your personal library</p>
-                        <a href="{{ url_for('upload_book') }}" class="btn btn-primary mt-2">Add a Book</a>
+                        <a href="{{ url_for('main.upload_book') }}" class="btn btn-primary mt-2">Add a Book</a>
                     </div>
                 </div>
             {% endif %}
@@ -247,7 +247,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h3><i class="bi bi-book-half me-2"></i>Shared with You</h3>
             {% if shared_books_with_user and shared_books_with_user|length == 4 %}
-                <a href="{{ url_for('my_books', shared_with_me=1) }}" class="text-decoration-none">View All</a>
+                <a href="{{ url_for('main.my_books', shared_with_me=1) }}" class="text-decoration-none">View All</a>
             {% endif %}
         </div>
    
@@ -255,7 +255,7 @@
             {% if shared_books_with_user %} 
                 {% for book in shared_books_with_user %} 
                     <div class="col-md-3 col-sm-6 mb-4">
-                        <a href="{{ url_for('book_detail', book_id=book.id) }}" class="text-decoration-none">
+                        <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="text-decoration-none">
                             <div class="book-card card h-100">
                                 <div class="book-cover-container">
                                     <img src="{{ book.cover_image if book.cover_image else url_for('static', filename='images/default_cover.png') }}" alt="{{ book.title }}" class="card-img-top book-cover">
@@ -309,8 +309,8 @@
                 <h1>Welcome to BookCorner!</h1>
                 <p class="lead">Your personal book tracking companion. Track what you read, when you read, and discover new books.</p>
                 <div class="mt-4">
-                    <a href="{{ url_for('signup') }}" class="btn btn-primary btn-lg me-2">Sign Up</a>
-                    <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg">Log In</a>
+                    <a href="{{ url_for('main.signup') }}" class="btn btn-primary btn-lg me-2">Sign Up</a>
+                    <a href="{{ url_for('main.login') }}" class="btn btn-outline-primary btn-lg">Log In</a>
                 </div>
             </div>
         </div>
@@ -360,7 +360,7 @@
         {% if public_books %}
             {% for book in public_books %}
                 <div class="col-md-3 col-sm-6 mb-4">
-                    <a href="{{ url_for('book_detail', book_id=book.id) }}" class="text-decoration-none">
+                    <a href="{{ url_for('main.book_detail', book_id=book.id) }}" class="text-decoration-none">
                         <div class="book-card card h-100">
                             <div class="book-cover-container">
                                 <img src="{{ book.cover_image }}" alt="{{ book.title }}" class="card-img-top book-cover">

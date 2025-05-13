@@ -1,6 +1,9 @@
-from app import db, application
+from app import create_app, db
 from app.models import User, Book, ReadingProgress, BookShare, Notification
 from datetime import datetime, timezone, timedelta
+from config import Config
+
+application = create_app(Config)
 
 def seed_database():
     print("Seeding database...")

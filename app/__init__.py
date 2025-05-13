@@ -1,19 +1,29 @@
 from flask import Flask
-from config import Config
+from config import Config 
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
 from flask_login import LoginManager
 
-application = Flask(__name__)
-application.config.from_object(Config)
-db = SQLAlchemy(application)
-migrate = Migrate(application, db)
+db = SQLAlchemy()
+migrate = Migrate()
+csrf = CSRFProtect() 
+login = LoginManager()
+login.login_view = 'main.login'  
 
-csrf = CSRFProtect(application)
-login = LoginManager(application)
-login.login_view = 'login'  # Redirect to login page if not authenticated
+# Application factory function
+def create_app(config_class=Config):
+    app = Flask(__name__)
+    app.config.from_object(config_class)
 
-print("Using SECRET_KEY:", application.config['SECRET_KEY'])
+    db.init_app(app)
+    migrate.init_app(app, db)
+    csrf.init_app(app) 
+    login.init_app(app)
 
-from app import routes, models
+    from app.routes import bp as main_blueprint 
+    app.register_blueprint(main_blueprint)
+
+    from app import models 
+ 
+    return app

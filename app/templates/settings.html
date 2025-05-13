@@ -9,7 +9,7 @@
 
     <div class="mb-5">
         <h3>Account Settings</h3>
-        <form method="POST" action="{{ url_for('settings') }}" novalidate>
+        <form method="POST" action="{{ url_for('main.settings') }}" novalidate>
             {{ account_form.hidden_tag() }}
 
             <div class="mb-3">
@@ -50,7 +50,7 @@
 
     <div class="mb-5">
         <h3>Theme</h3>
-        <form method="POST" action="{{ url_for('settings') }}" novalidate>
+        <form method="POST" action="{{ url_for('main.settings') }}" novalidate>
             {{ theme_form.hidden_tag() }}
 
             {% for subfield in theme_form.theme %}
@@ -70,7 +70,7 @@
     <div class="mt-5 pt-4 border-top border-danger">
          <h3>Delete Account</h3>
          <p class="text-danger">Warning: This action is permanent and cannot be undone. All your data, including tracked books and reading progress, will be lost.</p>
-         <form method="POST" action="{{ url_for('settings') }}" novalidate onsubmit="return confirm('Are you absolutely sure you want to delete your account? This cannot be undone.');">
+         <form method="POST" action="{{ url_for('main.settings') }}" novalidate onsubmit="return confirm('Are you absolutely sure you want to delete your account? This cannot be undone.');">
              {{ delete_form.hidden_tag() }}
 
              <div class="mb-3">
