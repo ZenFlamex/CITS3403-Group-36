@@ -14,7 +14,7 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark mb-4">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('index') }}">
+            <a class="navbar-brand" href="{{ url_for('main.index') }}">
                 <i class="bi bi-book me-2"></i>BookCorner
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -23,14 +23,14 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('index') }}"></i>Home</a>
+                        <a class="nav-link" href="{{ url_for('main.index') }}"></i>Home</a>
                     </li>
                     {% if current_user and current_user.is_authenticated %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('upload_book') }}"></i>Add Book</a>
+                        <a class="nav-link" href="{{ url_for('main.upload_book') }}"></i>Add Book</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('my_books') }}"></i>My Books</a>
+                        <a class="nav-link" href="{{ url_for('main.my_books') }}"></i>My Books</a>
                     </li>
                     {% endif %}
                 </ul>
@@ -86,7 +86,7 @@
                             {% endif %}
 
                             <li class="px-3 py-2">
-                                <a href="{{ url_for('notifications') }}" class="btn btn-primary btn-sm d-block">View All Notifications</a>
+                                <a href="{{ url_for('main.notifications') }}" class="btn btn-primary btn-sm d-block">View All Notifications</a>
                             </li>
                         </ul>
                     </li>
@@ -96,18 +96,18 @@
                             <i class="bi bi-person-circle me-1"></i>{{ username }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('profile') }}">Profile</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('settings')}}">Settings</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.profile') }}">Profile</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.settings')}}">Settings</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.logout') }}">Logout</a></li>
                         </ul>
                     </li>
                     {% else %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                        <a class="nav-link" href="{{ url_for('main.login') }}">Login</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('signup') }}">Sign Up</a>
+                        <a class="nav-link" href="{{ url_for('main.signup') }}">Sign Up</a>
                     </li>
                     {% endif %}
                 </ul>

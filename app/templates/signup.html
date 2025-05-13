@@ -12,7 +12,7 @@
             <h2 class="text-center mb-2">Create Account</h2>
             <p class="text-center text-muted mb-4">Join BookCorner today!</p>
 
-            <form action="{{ url_for('signup') }}" method="POST" novalidate>
+            <form action="{{ url_for('main.signup') }}" method="POST" novalidate>
                 {{ form.hidden_tag() }}
 
                 <div class="form-group mb-3">
@@ -53,7 +53,7 @@
             </form>
 
             <div class="login-link text-center mt-3">
-                <small>Already have an account? <a href="{{ url_for('login') }}">Log in</a></small>
+                <small>Already have an account? <a href="{{ url_for('main.login') }}">Log in</a></small>
             </div>
         </div>
     </div>

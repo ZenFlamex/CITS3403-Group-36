@@ -1,6 +1,6 @@
-from app import application, db
+from app import db
 from app.models import User, Book, Notification, BookShare, ReadingProgress
-from flask import flash, redirect, render_template, g, request, url_for, session, jsonify, abort
+from flask import Blueprint, flash, redirect, render_template, g, request, url_for, session, jsonify, abort, current_app
 from datetime import datetime
 from app.forms import LoginForm, SignupForm, AccountSettingsForm, ThemeForm, DeleteAccountForm, BookUploadForm, ProfilePictureForm
 from flask_login import current_user, login_user, logout_user, login_required
@@ -10,9 +10,10 @@ from werkzeug.utils import secure_filename
 import requests
 import os
 
+bp = Blueprint('main', __name__)
 
 #  Format a timestamp string into 'DD MonthName YYYY HH:MM' format.
-@application.template_filter('datetimeformat') 
+@bp.app_template_filter('datetimeformat')
 def format_datetime_custom(value, format="%d %B %Y %H:%M"):
     if value is None: return ""
     try:
@@ -21,8 +22,7 @@ def format_datetime_custom(value, format="%d %B %Y %H:%M"):
         return dt_object.strftime(format)
     except (ValueError, TypeError): return str(value)
 
-
-@application.context_processor
+@bp.app_context_processor
 def inject_notifications():
     unread_notifications_for_dropdown = [] 
     unread_count = 0
@@ -47,7 +47,7 @@ def inject_notifications():
         'username': username
     }
 
-@application.route('/')
+@bp.route('/')
 def index():
     if current_user.is_authenticated:
         current_user_id = current_user.id
@@ -173,10 +173,10 @@ def index():
             shared_books_with_user=[]
         )
 
-@application.route('/signup', methods=['GET', 'POST']) 
+@bp.route('/signup', methods=['GET', 'POST'])
 def signup():
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
 
     form = SignupForm() 
     if form.validate_on_submit(): 
@@ -187,42 +187,42 @@ def signup():
         db.session.commit()
         flash('Congratulations, you are now a registered user!', 'success')
       
-        return redirect(url_for('login')) 
+        return redirect(url_for('main.login')) 
 
     return render_template('signup.html', title="Sign Up", form=form)
 
-
-@application.route('/login', methods=['GET', 'POST'])
+@bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
 
     form = LoginForm() 
     if form.validate_on_submit(): 
         user = User.query.filter_by(email=form.email.data).first() 
         if user is None or not user.check_password(form.password.data):
             flash('Invalid email or password.', 'danger') 
-            return redirect(url_for('login'))
+            return redirect(url_for('main.login'))
         login_user(user, remember=form.remember_me.data)
         flash('Login successful!', 'success')
 
         next_page = request.args.get('next')
  
         if not next_page or urlsplit(next_page).netloc != '':
-            next_page = url_for('index') 
+            next_page = url_for('main.index') 
         return redirect(next_page)
 
     return render_template('login.html', title='Login', form=form)
 
-@application.route('/logout')
+
+@bp.route('/logout')
 @login_required
 def logout():
     logout_user() 
     flash('You have been logged out.', 'info')
-    return redirect(url_for('index'))
+    return redirect(url_for('main.index'))
 
 
-@application.route('/upload_book', methods=['GET', 'POST'])
+@bp.route('/upload_book', methods=['GET', 'POST'])
 @login_required
 def upload_book():
     form = BookUploadForm()
@@ -267,7 +267,7 @@ def upload_book():
                             cover_image = f"https://covers.openlibrary.org/b/id/{cover_id}-M.jpg"
             except Exception as e:
                 # Log the error but continue with default cover
-                application.logger.warning(f"Error fetching OpenLibrary data for '{openlibrary_id}': {str(e)}")
+                current_app.logger.warning(f"Error fetching OpenLibrary data for '{openlibrary_id}': {str(e)}")
                 # We'll use the default cover image if there's an error
         
         # Create new book
@@ -305,21 +305,19 @@ def upload_book():
             flash('Book added successfully!', 'success')
 
             try:
-                application.logger.debug(f"Calling milestone check for user {current_user.id} after adding book.")
+                current_app.logger.debug(f"Calling milestone check for user {current_user.id} after adding book.")
                 check_and_create_milestone_notifications(current_user)
             except Exception as milestone_e:
-                application.logger.error(f"Error during milestone check after adding book for user {current_user.id}: {milestone_e}", exc_info=True)
-
-            return redirect(url_for('my_books')) 
+                current_app.logger.error(f"Error during milestone check after adding book for user {current_user.id}: {milestone_e}", exc_info=True)
+            return redirect(url_for('main.my_books'))
 
         except Exception as e:
-            db.session.rollback() 
+            db.session.rollback()
             flash(f"Error adding book: {str(e)}", "danger")
-            application.logger.error(f"Error adding book for user {current_user.id}: {e}", exc_info=True)
-   
+            current_app.logger.error(f"Error adding book for user {current_user.id}: {e}", exc_info=True)
     return render_template('upload_book.html', title='Add Book', form=form)
 
-@application.route('/my_books')
+@bp.route('/my_books')
 @login_required
 def my_books():
     favourites_filter = request.args.get('favourites', type=int, default=0) == 1
@@ -392,11 +390,10 @@ def get_favorite_genre(user_id):
             return genre_stats.genre
         return "No favorite yet"
     except Exception as e:
-        application.logger.error(f"Error calculating favorite genre for user {user_id}: {e}")
+        current_app.logger.error(f"Error calculating favorite genre for user {user_id}: {e}")
         return "Unknown"
 
-
-@application.route('/profile')
+@bp.route('/profile')
 @login_required
 def profile():
     recent_books = Book.query.filter_by(creator_id=current_user.id).limit(4).all() 
@@ -415,7 +412,7 @@ def allowed_file(filename):
 def sanitize_filename(filename):
     return ''.join(c for c in filename if c.isalnum() or c in '._-')
 
-@application.route('/upload_profile_picture', methods=['POST'])
+@bp.route('/upload_profile_picture', methods=['POST'])
 @login_required
 def upload_profile_picture():
     form = ProfilePictureForm()
@@ -423,11 +420,11 @@ def upload_profile_picture():
         file = form.file.data
         if not allowed_file(file.filename):  # Check if file type is allowed
             flash('Invalid file type. Only PNG, JPG, JPEG, and GIF are allowed.', 'danger')
-            return redirect(url_for('profile'))
+            return redirect(url_for('main.profile'))
 
         # Sanitize and save the filename
         filename = datetime.now().strftime('%Y%m%d%H%M%S_') + secure_filename(file.filename)
-        upload_path = os.path.join(application.root_path, 'static', 'images')
+        upload_path = os.path.join(current_app.root_path, 'static', 'images')
 
         os.makedirs(upload_path, exist_ok=True)
 
@@ -444,18 +441,18 @@ def upload_profile_picture():
         db.session.commit()
 
         flash('Profile picture updated successfully.', 'success')
-        return redirect(url_for('profile'))
+        return redirect(url_for('main.profile'))
 
     flash('Error uploading profile picture.', 'danger')
-    return redirect(url_for('profile'))
+    return redirect(url_for('main.profile'))
 
-@application.route('/remove-profile-picture', methods=['POST'])
+@bp.route('/remove-profile-picture', methods=['POST'])
 def remove_profile_picture():
     if current_user.profile_picture == 'default_pfp.png':
         flash('You cannot remove the default profile picture.', 'warning')
-        return redirect(url_for('profile'))
+        return redirect(url_for('main.profile'))
     
-    upload_path = os.path.join(application.root_path, 'static', 'images')
+    upload_path = os.path.join(current_app.root_path, 'static', 'images')
     old_picture = current_user.profile_picture
     if old_picture and old_picture != 'default_pfp.png':
         old_path = os.path.join(upload_path, old_picture)
@@ -465,9 +462,9 @@ def remove_profile_picture():
     current_user.profile_picture = 'default_pfp.png'
     db.session.commit()
     flash("Profile picture reset to default.", "info")
-    return redirect(url_for('profile'))
+    return redirect(url_for('main.profile'))
 
-@application.route('/settings', methods=['GET', 'POST']) 
+@bp.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
     account_form = AccountSettingsForm(prefix='account') 
@@ -480,7 +477,7 @@ def settings():
                  existing_user = User.query.filter(User.username == account_form.username.data, User.id != current_user.id).first()
                  if existing_user:
                      flash('Username already taken.', 'danger')
-                     return redirect(url_for('settings'))
+                     return redirect(url_for('main.settings'))
                  current_user.username = account_form.username.data
                  flash('Username updated.', 'success')
 
@@ -488,7 +485,7 @@ def settings():
                  existing_user = User.query.filter(User.email == account_form.email.data, User.id != current_user.id).first()
                  if existing_user:
                      flash('Email already registered.', 'danger')
-                     return redirect(url_for('settings'))
+                     return redirect(url_for('main.settings'))
                  current_user.email = account_form.email.data
                  flash('Email updated.', 'success')
 
@@ -497,13 +494,13 @@ def settings():
                 flash('Password updated.', 'success')
 
             db.session.commit()
-            return redirect(url_for('settings')) 
+            return redirect(url_for('main.settings')) 
 
         elif theme_form.submit_theme.data and theme_form.validate_on_submit():
             current_user.theme = theme_form.theme.data
             db.session.commit()
             flash('Theme updated successfully!', 'success')
-            return redirect(url_for('settings'))
+            return redirect(url_for('main.settings'))
 
         elif delete_form.submit_delete.data and delete_form.validate_on_submit():
             user_id_to_delete = current_user.id
@@ -516,9 +513,9 @@ def settings():
                 db.session.delete(user_to_delete)
                 db.session.commit()
                 flash('Your account has been permanently deleted.', 'success')
-                return redirect(url_for('index'))
+                return redirect(url_for('main.index'))
             flash('Error deleting account.', 'danger')
-            return redirect(url_for('settings')) 
+            return redirect(url_for('main.settings')) 
         else:
              if account_form.errors:
                  for field, errors in account_form.errors.items():
@@ -544,7 +541,7 @@ def settings():
                            delete_form=delete_form)
                            
 
-@application.route('/notifications')
+@bp.route('/notifications')
 @login_required 
 def notifications():
     user_notifications = Notification.query.filter_by(
@@ -557,7 +554,7 @@ def notifications():
     
 
 # --- Route to Display Book Details ---
-@application.route('/book/<int:book_id>')
+@bp.route('/book/<int:book_id>')
 def book_detail(book_id):
     book = Book.query.get_or_404(book_id)
 
@@ -584,9 +581,9 @@ def book_detail(book_id):
     if not can_view:
         flash("You don't have permission to view this private book.", "danger")
         if current_user.is_authenticated:
-            return redirect(url_for('my_books'))
+            return redirect(url_for('main.my_books'))
         else:
-            return redirect(url_for('login', next=request.url))
+            return redirect(url_for('main.login', next=request.url))
 
     try:
         if hasattr(book, 'reading_progress') and book.reading_progress:
@@ -609,7 +606,7 @@ def book_detail(book_id):
             total_pages_read = 0
             average_pages_read = 0
     except Exception as e:
-        application.logger.error(f"Error calculating reading progress for book {book_id}: {e}")
+        current_app.logger.error(f"Error calculating reading progress for book {book_id}: {e}")
         reading_progress_data = []
         total_pages_read = 0
         average_pages_read = 0
@@ -635,7 +632,7 @@ def book_detail(book_id):
     )
 
 # --- API Route to Search Users ---
-@application.route('/users/search')
+@bp.route('/users/search')
 @login_required
 def search_users():
     query = request.args.get('q', '', type=str).strip()
@@ -669,7 +666,7 @@ def search_users():
     return jsonify(results)
 
 # --- Route to Handle Sharing Action ---
-@application.route('/book/<int:book_id>/share', methods=['POST'])
+@bp.route('/book/<int:book_id>/share', methods=['POST'])
 @login_required
 def share_book(book_id):
     book = db.session.get(Book, book_id)
@@ -682,28 +679,28 @@ def share_book(book_id):
     user_id_to_share_with = request.form.get('user_id', type=int)
     if not user_id_to_share_with:
         flash('No user selected.', 'warning')
-        return redirect(url_for('book_detail', book_id=book_id))
+        return redirect(url_for('main.book_detail', book_id=book_id))
 
     user_to_share = db.session.get(User, user_id_to_share_with)
     if not user_to_share:
         flash('Selected user not found.', 'danger')
-        return redirect(url_for('book_detail', book_id=book_id))
+        return redirect(url_for('main.book_detail', book_id=book_id))
 
     if user_id_to_share_with == current_user.id:
         flash('You cannot share a book with yourself.', 'warning')
-        return redirect(url_for('book_detail', book_id=book_id))
+        return redirect(url_for('main.book_detail', book_id=book_id))
 
     existing_share = BookShare.query.filter_by(book_id=book.id, shared_with_user_id=user_id_to_share_with).first()
     if existing_share:
         flash(f'Book already shared with {user_to_share.username}.', 'info')
-        return redirect(url_for('book_detail', book_id=book_id))
+        return redirect(url_for('main.book_detail', book_id=book_id))
 
     try:
         new_share = BookShare(book_id=book.id, shared_with_user_id=user_to_share.id)
         db.session.add(new_share)
 
         notification_text = f"{current_user.username} shared the book '{book.title}' with you."
-        notification_link = url_for('book_detail', book_id=book.id, _external=True)
+        notification_link = url_for('main.book_detail', book_id=book.id, _external=True)
         direct_share_notification = Notification(
             receiver_id=user_to_share.id,
             sender_name=current_user.username,
@@ -716,36 +713,36 @@ def share_book(book_id):
         flash(f'Book successfully shared with {user_to_share.username}!', 'success')
 
         try:
-            application.logger.debug(f"Calling milestone check for user {current_user.id} (sharer) after sharing a book.")
+            current_app.logger.debug(f"Calling milestone check for user {current_user.id} (sharer) after sharing a book.")
             check_and_create_milestone_notifications(current_user)
         except Exception as milestone_e_sharer: 
-            application.logger.error(f"Error during milestone check for sharer {current_user.id}: {milestone_e_sharer}", exc_info=True)
+            current_app.logger.error(f"Error during milestone check for sharer {current_user.id}: {milestone_e_sharer}", exc_info=True)
 
         if user_to_share: 
             try:
-                application.logger.debug(f"Calling milestone check for user {user_to_share.id} (receiver) after being shared a book.")
+                current_app.logger.debug(f"Calling milestone check for user {user_to_share.id} (receiver) after being shared a book.")
                 check_and_create_milestone_notifications(user_to_share)
             except Exception as milestone_e_receiver:
-                application.logger.error(f"Error during milestone check for receiver {user_to_share.id}: {milestone_e_receiver}", exc_info=True)
+                current_app.logger.error(f"Error during milestone check for receiver {user_to_share.id}: {milestone_e_receiver}", exc_info=True)
         else:
-            application.logger.warning(f"Could not perform milestone check for receiver; user_to_share object was None for ID {user_id_to_share_with}")
+            current_app.logger.warning(f"Could not perform milestone check for receiver; user_to_share object was None for ID {user_id_to_share_with}")
     
     except Exception as e:
         db.session.rollback()
         flash(f'Error sharing book: {str(e)}', 'danger')
-        application.logger.error(f"Error sharing book {book_id} by user {current_user.id} to user ID {user_id_to_share_with}: {e}", exc_info=True)
+        current_app.logger.error(f"Error sharing book {book_id} by user {current_user.id} to user ID {user_id_to_share_with}: {e}", exc_info=True)
 
-    return redirect(url_for('book_detail', book_id=book_id))
+    return redirect(url_for('main.book_detail', book_id=book_id))
 
 # --- Route to Handle Revoking Share Action ---
-@application.route('/book/share/<int:share_id>/revoke', methods=['POST'])
+@bp.route('/book/share/<int:share_id>/revoke', methods=['POST'])
 @login_required
 def revoke_share(share_id):
 
     share_to_revoke = db.session.get(BookShare, share_id)
     if not share_to_revoke:
         flash('Share record not found.', 'warning')
-        return redirect(url_for('index')) 
+        return redirect(url_for('main.index')) 
 
     book = db.session.get(Book, share_to_revoke.book_id)
     if not book:
@@ -756,8 +753,8 @@ def revoke_share(share_id):
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            application.logger.error(f"Error deleting orphaned share {share_id} after book not found: {e}")
-        return redirect(url_for('index'))
+            current_app.logger.error(f"Error deleting orphaned share {share_id} after book not found: {e}")
+        return redirect(url_for('main.index'))
 
     # Authorization: Only the book owner can revoke
     if book.creator_id != current_user.id:
@@ -771,9 +768,9 @@ def revoke_share(share_id):
         receiver_id_of_notification = share_to_revoke.shared_with_user_id
 
         db.session.delete(share_to_revoke)
-        application.logger.info(f"Share record ID {share_id} deleted.")
+        current_app.logger.info(f"Share record ID {share_id} deleted.")
 
-        expected_link = url_for('book_detail', book_id=book_id_of_revoked_share, _external=True)
+        expected_link = url_for('main.book_detail', book_id=book_id_of_revoked_share, _external=True)
         
         related_notification = Notification.query.filter_by(
             receiver_id=receiver_id_of_notification,
@@ -782,23 +779,21 @@ def revoke_share(share_id):
         ).first() 
 
         if related_notification:
-            application.logger.info(f"Revoking share also deleting related 'share' notification ID: {related_notification.id} for receiver_id: {receiver_id_of_notification}, book_id: {book_id_of_revoked_share}")
+            current_app.logger.info(f"Revoking share also deleting related 'share' notification ID: {related_notification.id} for receiver_id: {receiver_id_of_notification}, book_id: {book_id_of_revoked_share}")
             db.session.delete(related_notification)
         else:
             # If no specific notification found, log the event
-            application.logger.info(f"No specific 'share' notification found to delete for share revoke targeting: receiver_id={receiver_id_of_notification}, book_id={book_id_of_revoked_share}, expected_link={expected_link}")
+            current_app.logger.info(f"No specific 'share' notification found to delete for share revoke targeting: receiver_id={receiver_id_of_notification}, book_id={book_id_of_revoked_share}, expected_link={expected_link}")
 
         db.session.commit()
         flash(f'Access revoked for {username}.', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error revoking access, please try again later.', 'danger')
-        application.logger.error(f"Error revoking share {share_id}: {e}")
+        current_app.logger.error(f"Error revoking share {share_id}: {e}")
+    return redirect(url_for('main.book_detail', book_id=book.id))
 
-    return redirect(url_for('book_detail', book_id=book.id))
-
-
-@application.route('/book/<int:book_id>/add_progress', methods=['POST'])
+@bp.route('/book/<int:book_id>/add_progress', methods=['POST'])
 @login_required 
 def add_reading_progress(book_id):
     book = Book.query.get_or_404(book_id)
@@ -818,11 +813,11 @@ def add_reading_progress(book_id):
         remaining_pages = book.total_pages - total_pages_read
         if book.total_pages > 0 and pages_read > remaining_pages:
             flash(f"Cannot add progress. The current page ({pages_read}) exceeds the remaining pages of the book ({remaining_pages}).", "danger")
-            return redirect(url_for('book_detail', book_id=book.id))
+            return redirect(url_for('main.book_detail', book_id=book.id))
 
         if pages_read < 0:
             flash("Cannot add progress. The current page cannot be negative.", "danger")
-            return redirect(url_for('book_detail', book_id=book.id))
+            return redirect(url_for('main.book_detail', book_id=book.id))
 
         # Update the current page
         book.current_page = total_pages_read + pages_read
@@ -857,19 +852,18 @@ def add_reading_progress(book_id):
     except Exception as e:
         db.session.rollback()
         flash("Error saving reading progress.", "danger")
-        application.logger.error(f"Error adding reading progress for book {book_id} by user {current_user.id}: {e}", exc_info=True)
+        current_app.logger.error(f"Error adding reading progress for book {book_id} by user {current_user.id}: {e}", exc_info=True)
 
+    return redirect(url_for('main.book_detail', book_id=book.id))
 
-    return redirect(url_for('book_detail', book_id=book.id))
-
-@application.route('/book/<int:book_id>/delete_progress/<int:progress_id>', methods=['POST'])
+@bp.route('/book/<int:book_id>/delete_progress/<int:progress_id>', methods=['POST'])
 def delete_reading_progress(book_id, progress_id):
     book = Book.query.get_or_404(book_id)
     progress = ReadingProgress.query.get_or_404(progress_id)
 
     if book.creator_id != current_user.id:
         flash("You don't have permission to delete this progress entry.", "danger")
-        return redirect(url_for('book_detail', book_id=book.id))
+        return redirect(url_for('main.book_detail', book_id=book.id))
 
     try:
         # Delete the reading progress entry
@@ -888,13 +882,12 @@ def delete_reading_progress(book_id, progress_id):
     except Exception as e:
         db.session.rollback()
         flash("Error deleting reading progress entry.", "danger")
-        application.logger.error(f"Error deleting reading progress for book {book_id}: {e}", exc_info=True)
+        current_app.logger.error(f"Error deleting reading progress for book {book_id}: {e}", exc_info=True)
 
-    return redirect(url_for('book_detail', book_id=book.id))
-
+    return redirect(url_for('main.book_detail', book_id=book.id))
 
 # --- API Route to Mark Notification as Read ---
-@application.route('/notifications/<int:notification_id>/read', methods=['POST'])
+@bp.route('/notifications/<int:notification_id>/read', methods=['POST'])
 @login_required
 def mark_notification_read(notification_id):
     notification = db.session.get(Notification, notification_id)
@@ -916,87 +909,87 @@ def mark_notification_read(notification_id):
             return jsonify({'success': True}), 200
         except Exception as e:
             db.session.rollback()
-            application.logger.error(f"Error marking notification {notification_id} as read: {e}")
+            current_app.logger.error(f"Error marking notification {notification_id} as read: {e}")
             return jsonify({'success': False, 'message': 'Database error.'}), 500
     else:
         return jsonify({'success': True}), 200
 
 def check_and_create_milestone_notifications(user):
     if not user or not isinstance(user, User):
-        application.logger.warning("Invalid user passed to milestone check.")
+        current_app.logger.warning("Invalid user passed to milestone check.")
         return
 
-    application.logger.debug(f"Checking milestones for user {user.id} ({user.username})")
+    current_app.logger.debug(f"Checking milestones for user {user.id} ({user.username})")
 
     milestones = {
         'first_book_added': {
             'condition': lambda u: Book.query.filter_by(creator_id=u.id).count() >= 1,
             'text': 'Bookshelf initiated! You successfully added your first book.',
-            'link': lambda: url_for('my_books', _external=True)
+            'link': lambda: url_for('main.my_books', _external=True)
         },
         'first_book_completed': {
             'condition': lambda u: Book.query.filter_by(creator_id=u.id, status='Completed').count() >= 1,
             'text': 'First victory! Congratulations on completing your first book!',
-            'link': lambda: url_for('my_books', _external=True)
+            'link': lambda: url_for('main.my_books', _external=True)
         },
 
         'completed_5_books': { 
             'condition': lambda u: Book.query.filter_by(creator_id=u.id, status='Completed').count() >= 5,
             'text': 'Reading enthusiast! You have completed 5 books!',
-            'link': lambda: url_for('my_books', _external=True)
+            'link': lambda: url_for('main.my_books', _external=True)
         },
         'completed_10_books': { 
             'condition': lambda u: Book.query.filter_by(creator_id=u.id, status='Completed').count() >= 10,
             'text': 'Perfect ten! 10 books completed, keep it up!',
-            'link': lambda: url_for('my_books', _external=True)
+            'link': lambda: url_for('main.my_books', _external=True)
         },
         'completed_25_books': { 
             'condition': lambda u: Book.query.filter_by(creator_id=u.id, status='Completed').count() >= 25,
             'text': 'Reading expert! 25 books completed, awesome!',
-            'link': lambda: url_for('my_books', _external=True)
+            'link': lambda: url_for('main.my_books', _external=True)
         },
         'completed_50_books': {
             'condition': lambda u: Book.query.filter_by(creator_id=u.id, status='Completed').count() >= 50,
             'text': 'Reading master! 50 books completed, impressive!',
-            'link': lambda: url_for('my_books', _external=True)
+            'link': lambda: url_for('main.my_books', _external=True)
         },
 
         'read_100_pages': { 
             'condition': lambda u: (db.session.query(func.sum(ReadingProgress.pages_read))
                                     .filter(ReadingProgress.user_id == u.id).scalar() or 0) >= 100,
             'text': 'A journey of a thousand pages begins with a single step! You\'ve read over 100 pages!',
-            'link': lambda: url_for('my_books', _external=True)
+            'link': lambda: url_for('main.my_books', _external=True)
         },
         'read_1000_pages': { 
             'condition': lambda u: (db.session.query(func.sum(ReadingProgress.pages_read))
                                     .filter(ReadingProgress.user_id == u.id).scalar() or 0) >= 1000,
             'text': 'Breaking a thousand! You\'ve read over 1000 pages!',
-            'link': lambda: url_for('my_books', _external=True)
+            'link': lambda: url_for('main.my_books', _external=True)
         },
         'read_5000_pages': {
             'condition': lambda u: (db.session.query(func.sum(ReadingProgress.pages_read))
                                     .filter(ReadingProgress.user_id == u.id).scalar() or 0) >= 5000,
             'text': 'Page conqueror! Your reading volume has exceeded 5000 pages!',
-            'link': lambda: url_for('my_books', _external=True)
+            'link': lambda: url_for('main.my_books', _external=True)
         },
         'read_10000_pages': { 
             'condition': lambda u: (db.session.query(func.sum(ReadingProgress.pages_read))
                                     .filter(ReadingProgress.user_id == u.id).scalar() or 0) >= 10000,
             'text': 'Breaking ten thousand! Your reading volume has exceeded 10,000 pages!',
-            'link': lambda: url_for('my_books', _external=True)
+            'link': lambda: url_for('main.my_books', _external=True)
         },
 
          'diverse_reader_3_genres': { 
              'condition': lambda u: db.session.query(func.count(distinct(Book.genre))).filter(Book.creator_id == u.id).scalar() >= 3,
              'text': 'Broad Tastes! You have added books from at least 3 different genres.',
-             'link': lambda: url_for('my_books', _external=True)
+             'link': lambda: url_for('main.my_books', _external=True)
     
          },
 
         'shared_first_book': {
             'condition': lambda u: db.session.query(BookShare.id).join(Book, BookShare.book_id == Book.id).filter(Book.creator_id == u.id).count() >= 1,
             'text': 'Sharing is caring! You shared your first book.',
-            'link': lambda: url_for('my_books', _external=True)
+            'link': lambda: url_for('mian.my_books', _external=True)
         },
          
     }
@@ -1004,7 +997,7 @@ def check_and_create_milestone_notifications(user):
     for key, config in milestones.items():
         try:
             if config['condition'](user):
-                application.logger.debug(f"User {user.id} meets condition for milestone '{key}'")
+                current_app.logger.debug(f"User {user.id} meets condition for milestone '{key}'")
         
                 existing_notification = Notification.query.filter_by(
                     receiver_id=user.id,
@@ -1012,7 +1005,7 @@ def check_and_create_milestone_notifications(user):
                 ).first()
 
                 if not existing_notification:
-                    application.logger.info(f"Milestone '{key}' reached by user {user.id} and not yet notified. Creating notification.")
+                    current_app.logger.info(f"Milestone '{key}' reached by user {user.id} and not yet notified. Creating notification.")
                     notification = Notification(
                         receiver_id=user.id,
                         sender_name='System',
@@ -1022,15 +1015,16 @@ def check_and_create_milestone_notifications(user):
                     )
                     db.session.add(notification)
                     db.session.commit() 
-                    application.logger.info(f"Milestone notification '{key}' successfully created for user {user.id}")
+                    current_app.logger.info(f"Milestone notification '{key}' successfully created for user {user.id}")
 
                 else:
-                     application.logger.debug(f"User {user.id} already notified for milestone '{key}'. Skipping.")
+                     current_app.logger.debug(f"User {user.id} already notified for milestone '{key}'. Skipping.")
 
         except Exception as e:
             db.session.rollback()
-            application.logger.error(f"Error processing milestone '{key}' for user {user.id}: {e}", exc_info=True)
-@application.route('/book/<int:book_id>/change_status', methods=['POST'])
+            current_app.logger.error(f"Error processing milestone '{key}' for user {user.id}: {e}", exc_info=True)
+
+@bp.route('/book/<int:book_id>/change_status', methods=['POST'])
 def change_status(book_id):
     book = Book.query.get_or_404(book_id)
 
@@ -1043,12 +1037,12 @@ def change_status(book_id):
     # Prevent setting "Completed" if current page < total pages
     if new_status == 'Completed' and book.current_page < book.total_pages:
         flash("Cannot mark as 'Completed' because the current page is less than the total pages.", "danger")
-        return redirect(url_for('book_detail', book_id=book.id))
+        return redirect(url_for('main.book_detail', book_id=book.id))
 
     # Prevent changing status if the book is already completed
     if book.status == 'Completed':
         flash("Cannot change status because the book is already completed.", "danger")
-        return redirect(url_for('book_detail', book_id=book.id))
+        return redirect(url_for('main.book_detail', book_id=book.id))
 
     if new_status in ['Completed', 'Dropped', 'In Progress']:
         book.status = new_status
@@ -1057,10 +1051,9 @@ def change_status(book_id):
     else:
         flash("Invalid status.", "danger")
 
-    return redirect(url_for('book_detail', book_id=book.id))
+    return redirect(url_for('main.book_detail', book_id=book.id))
 
-
-@application.route('/book/<int:book_id>/toggle_favorite', methods=['POST'])
+@bp.route('/book/<int:book_id>/toggle_favorite', methods=['POST'])
 def toggle_favorite(book_id):
     book = Book.query.get_or_404(book_id)
 
@@ -1082,10 +1075,9 @@ def toggle_favorite(book_id):
     if next_url:
         return redirect(next_url)
     else:
-        return redirect(url_for('book_detail', book_id=book.id))
+        return redirect(url_for('main.book_detail', book_id=book.id))
 
-
-@application.route('/book/<int:book_id>/toggle_public', methods=['POST'])
+@bp.route('/book/<int:book_id>/toggle_public', methods=['POST'])
 def toggle_public(book_id):
     book = Book.query.get_or_404(book_id)
 
@@ -1101,9 +1093,9 @@ def toggle_public(book_id):
     else:
         flash("Book is now private.", "success")
 
-    return redirect(url_for('book_detail', book_id=book.id))
+    return redirect(url_for('main.book_detail', book_id=book.id))
 
-@application.route('/book/<int:book_id>/delete', methods=['POST'])
+@bp.route('/book/<int:book_id>/delete', methods=['POST'])
 def delete_book(book_id):
     book = Book.query.get_or_404(book_id)
 
@@ -1116,9 +1108,9 @@ def delete_book(book_id):
     db.session.commit()
     flash("Book deleted successfully.", "success")
 
-    return redirect(url_for('index'))
+    return redirect(url_for('main.index'))
 
-@application.route('/book/<int:book_id>/update_rating', methods=['POST'])
+@bp.route('/book/<int:book_id>/update_rating', methods=['POST'])
 def update_rating(book_id):
     book = Book.query.get_or_404(book_id)
 
@@ -1134,4 +1126,4 @@ def update_rating(book_id):
     else:
         flash("Invalid rating value.", "danger")
 
-    return redirect(url_for('book_detail', book_id=book.id))
+    return redirect(url_for('main.book_detail', book_id=book.id))
