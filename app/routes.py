@@ -875,7 +875,11 @@ def delete_reading_progress(book_id, progress_id):
             .filter_by(book_id=book.id).scalar() or 0
         book.current_page = total_pages_read
 
-        # Commit the updated current_page to the database
+        # Check if the book's status needs to be updated
+        if book.current_page < book.total_pages and book.status == 'Completed':
+            book.status = 'In Progress'
+
+        # Commit the updated current_page and status to the database
         db.session.commit()
 
         flash("Reading progress entry deleted successfully!", "success")
