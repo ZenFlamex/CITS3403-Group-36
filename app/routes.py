@@ -993,7 +993,7 @@ def check_and_create_milestone_notifications(user):
         'shared_first_book': {
             'condition': lambda u: db.session.query(BookShare.id).join(Book, BookShare.book_id == Book.id).filter(Book.creator_id == u.id).count() >= 1,
             'text': 'Sharing is caring! You shared your first book.',
-            'link': lambda: url_for('mian.my_books', _external=True)
+            'link': lambda: url_for('main.my_books', _external=True)
         },
          
     }

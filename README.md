@@ -37,6 +37,8 @@ The design focuses on user-friendliness with a clean, responsive interface. The 
 | 23782618   | Jake Blackburne | Jakewidow           |
 | 23152493   | Bowen Guo       | breg11              |
 
+
+## How to run the website
 1. **Clone the repo**
 
    ```bash
@@ -88,3 +90,25 @@ The design focuses on user-friendliness with a clean, responsive interface. The 
    ```
 
 7. **_Open in browser visit http://127.0.0.1:5000 to view homepage_**
+
+
+
+
+## How to run test
+
+Make sure you are in venv then run 
+```
+python -m unittest discover tests
+```
+
+
+## Credits and Tools Used
+
+The development of **BookCorner** was supported with the help of the following AI-powered tools:
+
+- ChatGPT by OpenAI
+- Claude by Anthropic
+- GitHub Copilot
+
+These tools were used as coding assistants, while all design, logic, and implementation choices were made by Group 36.
+
