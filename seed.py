@@ -228,7 +228,7 @@ def seed_database():
         rating=5, 
         status='Completed', 
         total_pages=443, 
-        is_favorite=True, 
+        is_favorite=False, 
         is_public=True,
         start_date=datetime.strptime('2025-03-20', '%Y-%m-%d'),
         end_date=datetime.strptime('2025-04-10', '%Y-%m-%d')
