@@ -38,7 +38,7 @@ The design focuses on user-friendliness with a clean, responsive interface. The 
 | 23152493   | Bowen Guo       | breg11              |
 
 
-**How to run the website**
+## How to run the website
 1. **Clone the repo**
 
    ```bash
@@ -92,7 +92,10 @@ The design focuses on user-friendliness with a clean, responsive interface. The 
 7. **_Open in browser visit http://127.0.0.1:5000 to view homepage_**
 
 
-**How to run test**
+
+
+## How to run test
+
 Make sure you are in venv then run 
 ```
 python -m unittest discover tests
