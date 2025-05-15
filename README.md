@@ -67,9 +67,20 @@ The design focuses on user-friendliness with a clean, responsive interface. The 
 
 3. **Set SECRET_KEY in Environment**
 
+   **Option 1:** Export via terminal
    ```bash
-   SECRET_KEY=your_secure_secret_key
+   export SECRET_KEY=your_actual_secret_key
    ```
+
+   **Option 2:** Use a .flaskenv file (recommended for development)
+   ```bash
+   FLASK_APP=run.py
+   SECRET_KEY=your_actual_secret_key
+   FLASK_ENV=development
+   FLASK_DEBUG=1
+   ```
+
+   **NOTE: Replace "your_actual_secret_key" with a proper secret. Do not use this placeholder string as-is in production**
 
 4. **Setup Database**
 
